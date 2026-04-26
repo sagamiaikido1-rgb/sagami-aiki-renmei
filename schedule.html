@@ -1,11 +1,12 @@
 <!DOCTYPE html>
+
 <html lang="ja">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>スケジュール｜相模合気道連盟</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
   <style>
-    :root{--navy:#1a2744;--gold:#9a7b0a;--gold-light:#c4960e;--white:#ffffff;--cream:#fafaf7;--gray:#6b7280;--light:#f2efe8;--border:#e8e2d6;--chigasaki:#1D9E75;--hiratsuka:#378ADD;--samukawa:#D85A30;--fujisawa:#9F77DD;}
+    :root{--navy:#1a2744;--gold:#9a7b0a;--gold-light:#c4960e;--white:#ffffff;--cream:#fafaf7;--gray:#6b7280;--light:#f2efe8;--border:#e8e2d6;--chigasaki:#1D9E75;--hiratsuka:#378ADD;--samukawa:#D85A30;}
     *{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Noto Sans JP',sans-serif;background:var(--white);color:var(--navy);line-height:1.8;}
     header{background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1000;box-shadow:0 2px 12px rgba(0,0,0,0.06);}
     .header-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:68px;}
@@ -26,7 +27,7 @@
     main{max-width:1000px;margin:0 auto;padding:64px 24px;}
     .section-title{font-family:'Noto Serif JP',serif;font-size:20px;color:var(--navy);letter-spacing:2px;margin-bottom:24px;padding-bottom:12px;border-bottom:2px solid var(--light);}
     .regular-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:56px;}
-    .regular-card{border-radius:0;border-top:4px solid;padding:24px 20px;}
+    .regular-card{border-top:4px solid;padding:24px 20px;}
     .regular-card.chigasaki{border-color:var(--chigasaki);background:#f0fdf7;}
     .regular-card.hiratsuka{border-color:var(--hiratsuka);background:#eff6ff;}
     .regular-card.samukawa{border-color:var(--samukawa);background:#fff7f3;}
@@ -36,12 +37,9 @@
     .regular-card.samukawa .dojo-label{color:var(--samukawa);}
     .regular-day{font-family:'Noto Serif JP',serif;font-size:16px;color:var(--navy);font-weight:700;margin-bottom:4px;}
     .regular-time{font-size:13px;color:var(--gray);}
-    /* カレンダー埋め込みエリア */
-    .cal-wrap{background:var(--cream);border:1px solid var(--border);padding:32px;text-align:center;margin-bottom:32px;}
-    .cal-wrap p{font-size:14px;color:var(--gray);margin-bottom:16px;}
+    .cal-wrap{background:var(--cream);border:1px solid var(--border);padding:32px;margin-bottom:32px;}
+    .cal-wrap p{font-size:14px;color:var(--gray);margin-bottom:16px;text-align:center;}
     .cal-embed{width:100%;height:600px;border:none;border-radius:4px;}
-    .admin-link{display:inline-block;background:var(--navy);color:var(--white);padding:12px 28px;font-size:13px;font-weight:700;text-decoration:none;letter-spacing:1px;margin-top:16px;transition:all .2s;}
-    .admin-link:hover{background:#243258;}
     footer{background:var(--navy);color:rgba(255,255,255,0.55);text-align:center;padding:48px 20px;font-size:12px;line-height:2.4;}
     .footer-logo{font-family:'Noto Serif JP',serif;font-size:18px;color:var(--white);letter-spacing:3px;margin-bottom:10px;}
     footer a{color:rgba(255,255,255,0.7);text-decoration:none;}
@@ -70,38 +68,17 @@
 <main>
   <h2 class="section-title">定期稽古スケジュール</h2>
   <div class="regular-grid">
-    <div class="regular-card chigasaki">
-      <div class="dojo-label">茅ヶ崎道場</div>
-      <div class="regular-day">日曜日</div>
-      <div class="regular-time">09:30 〜 11:30</div>
-    </div>
-    <div class="regular-card hiratsuka">
-      <div class="dojo-label">平塚道場</div>
-      <div class="regular-day">日曜日</div>
-      <div class="regular-time">15:30 〜 17:30</div>
-    </div>
-    <div class="regular-card chigasaki">
-      <div class="dojo-label">茅ヶ崎道場</div>
-      <div class="regular-day">水曜日</div>
-      <div class="regular-time">18:30 〜 20:30</div>
-    </div>
-    <div class="regular-card samukawa">
-      <div class="dojo-label">寒川道場</div>
-      <div class="regular-day">土曜日</div>
-      <div class="regular-time">12:30 〜 14:30</div>
-    </div>
+    <div class="regular-card chigasaki"><div class="dojo-label">茅ヶ崎道場</div><div class="regular-day">日曜日</div><div class="regular-time">09:30 〜 11:30</div></div>
+    <div class="regular-card hiratsuka"><div class="dojo-label">平塚道場</div><div class="regular-day">日曜日</div><div class="regular-time">15:30 〜 17:30</div></div>
+    <div class="regular-card chigasaki"><div class="dojo-label">茅ヶ崎道場</div><div class="regular-day">水曜日</div><div class="regular-time">18:30 〜 20:30</div></div>
+    <div class="regular-card samukawa"><div class="dojo-label">寒川道場</div><div class="regular-day">土曜日</div><div class="regular-time">12:30 〜 14:30</div></div>
   </div>
-
   <h2 class="section-title">月別スケジュール</h2>
   <div class="cal-wrap">
     <p>Googleカレンダーで最新のスケジュールを確認できます。</p>
     <iframe class="cal-embed"
       src="https://calendar.google.com/calendar/embed?src=sagamiaikido1%40gmail.com&ctz=Asia%2FTokyo&hl=ja&mode=MONTH&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=0&showCalendars=0"
       frameborder="0" scrolling="no"></iframe>
-  </div>
-  <div style="text-align:center;padding-top:8px;">
-    <p style="font-size:13px;color:var(--gray);margin-bottom:16px">※ 管理者の方はこちらからスケジュールを管理できます</p>
-    <a href="https://sagamiaikido1-rgb.github.io/sagami/" target="_blank" class="admin-link">🔑 管理者ログイン</a>
   </div>
 </main>
 <footer>
