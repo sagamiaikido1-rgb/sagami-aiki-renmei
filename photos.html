@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>写真｜相模合気道連盟</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--navy:#1a2744;--gold:#9a7b0a;--gold-light:#c4960e;--white:#ffffff;--cream:#fafaf7;--gray:#6b7280;--light:#f2efe8;--border:#e8e2d6;}
+    *{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Noto Sans JP',sans-serif;background:var(--white);color:var(--navy);line-height:1.8;}
+    header{background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1000;box-shadow:0 2px 12px rgba(0,0,0,0.06);}
+    .header-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:68px;}
+    .logo{font-family:'Noto Serif JP',serif;font-size:19px;font-weight:700;color:var(--navy);letter-spacing:2px;text-decoration:none;}
+    .logo span{font-size:10px;color:var(--gold-light);display:block;letter-spacing:2px;font-weight:400;}
+    nav{display:flex;}nav a{color:var(--gray);text-decoration:none;font-size:13px;padding:8px 11px;transition:all .2s;position:relative;}
+    nav a::after{content:'';position:absolute;bottom:0;left:50%;right:50%;height:2px;background:var(--gold-light);transition:all .2s;}
+    nav a:hover::after,nav a.active::after{left:8px;right:8px;}nav a:hover,nav a.active{color:var(--navy);}
+    .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:8px;}
+    .hamburger span{display:block;width:24px;height:2px;background:var(--navy);}
+    .mobile-nav{display:none;background:var(--white);border-top:1px solid var(--border);}
+    .mobile-nav a{display:block;padding:14px 24px;color:var(--navy);text-decoration:none;font-size:14px;border-bottom:1px solid var(--border);}
+    .mobile-nav.open{display:block;}
+    .page-hero{background:linear-gradient(160deg,#f8f6f0 0%,var(--white) 100%);padding:64px 24px 48px;text-align:center;border-bottom:1px solid var(--border);}
+    .page-label{font-size:11px;letter-spacing:4px;color:var(--gold-light);margin-bottom:10px;}
+    .page-title{font-family:'Noto Serif JP',serif;font-size:clamp(28px,5vw,44px);font-weight:700;letter-spacing:6px;color:var(--navy);}
+    .page-line{width:40px;height:2px;background:var(--gold-light);margin:14px auto 0;}
+    main{max-width:1000px;margin:0 auto;padding:64px 24px;}
+    .insta-block{text-align:center;background:var(--cream);border:1px solid var(--border);padding:48px 32px;margin-bottom:48px;}
+    .insta-block h2{font-family:'Noto Serif JP',serif;font-size:22px;color:var(--navy);margin-bottom:12px;letter-spacing:2px;}
+    .insta-block p{font-size:14px;color:var(--gray);margin-bottom:24px;line-height:2;}
+    .insta-btn{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:white;padding:16px 40px;font-size:15px;font-weight:700;text-decoration:none;transition:opacity .2s;letter-spacing:1px;}
+    .insta-btn:hover{opacity:.88;}
+    .album-section h3{font-family:'Noto Serif JP',serif;font-size:20px;color:var(--navy);letter-spacing:2px;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid var(--light);}
+    .album-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:48px;}
+    .album-card{border:1px solid var(--border);overflow:hidden;cursor:pointer;transition:box-shadow .2s;}
+    .album-card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.1);}
+    .album-thumb{width:100%;height:140px;background:var(--light);display:flex;align-items:center;justify-content:center;font-size:40px;}
+    .album-info{padding:12px 14px;}
+    .album-info h4{font-size:14px;color:var(--navy);font-weight:600;margin-bottom:4px;}
+    .album-info p{font-size:12px;color:var(--gray);}
+    .album-link{display:block;background:var(--navy);color:var(--white);text-align:center;padding:10px;font-size:12px;font-weight:700;text-decoration:none;letter-spacing:1px;transition:background .2s;}
+    .album-link:hover{background:#243258;}
+    footer{background:var(--navy);color:rgba(255,255,255,0.55);text-align:center;padding:48px 20px;font-size:12px;line-height:2.4;}
+    .footer-logo{font-family:'Noto Serif JP',serif;font-size:18px;color:var(--white);letter-spacing:3px;margin-bottom:10px;}
+    footer a{color:rgba(255,255,255,0.7);text-decoration:none;}
+    .footer-divider{width:40px;height:1px;background:rgba(255,255,255,0.2);margin:16px auto;}
+    @media(max-width:768px){nav{display:none;}.hamburger{display:flex;}main{padding:48px 20px;}.insta-block{padding:32px 20px;}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <a class="logo" href="index.html">相模合気道連盟<span>SAGAMI AIKIDO FEDERATION</span></a>
+    <nav>
+      <a href="index.html">ホーム</a><a href="news.html">お知らせ</a><a href="instructors.html">指導者</a><a href="schedule.html">スケジュール</a><a href="contact.html">ご連絡先</a><a href="access.html">アクセス</a><a href="photos.html" class="active">写真</a><a href="links.html">リンク</a>
+    </nav>
+    <div class="hamburger" onclick="document.getElementById('mn').classList.toggle('open')"><span></span><span></span><span></span></div>
+  </div>
+  <div class="mobile-nav" id="mn">
+    <a href="index.html">ホーム</a><a href="news.html">お知らせ</a><a href="instructors.html">指導者</a><a href="schedule.html">スケジュール</a><a href="contact.html">ご連絡先</a><a href="access.html">アクセス</a><a href="photos.html">写真</a><a href="links.html">リンク</a>
+  </div>
+</header>
+<div class="page-hero">
+  <div class="page-label">GALLERY</div>
+  <h1 class="page-title">写真</h1>
+  <div class="page-line"></div>
+</div>
+<main>
+  <div class="insta-block">
+    <h2>最新の活動写真</h2>
+    <p>稽古風景・行事・演武の写真はInstagramで随時公開しています。<br>ぜひフォローしてください。</p>
+    <a href="https://www.instagram.com/sagami.aikido/" target="_blank" class="insta-btn">📸 @sagami.aikido をフォローする</a>
+  </div>
+  <div class="album-section">
+    <h3>フォトアルバム</h3>
+    <div class="album-grid">
+      <div class="album-card">
+        <div class="album-thumb">🥋</div>
+        <div class="album-info"><h4>昇段審査・鏡開き</h4><p>段位取得・新年行事</p></div>
+        <a href="https://photos.google.com/" target="_blank" class="album-link">アルバムを見る</a>
+      </div>
+      <div class="album-card">
+        <div class="album-thumb">🎉</div>
+        <div class="album-info"><h4>昇段祝い</h4><p>昇段記念写真</p></div>
+        <a href="https://photos.google.com/" target="_blank" class="album-link">アルバムを見る</a>
+      </div>
+      <div class="album-card">
+        <div class="album-thumb">🏟</div>
+        <div class="album-info"><h4>演武大会</h4><p>演武・大会の様子</p></div>
+        <a href="https://photos.google.com/" target="_blank" class="album-link">アルバムを見る</a>
+      </div>
+      <div class="album-card">
+        <div class="album-thumb">⛺</div>
+        <div class="album-info"><h4>合宿</h4><p>合宿の記録</p></div>
+        <a href="https://photos.google.com/" target="_blank" class="album-link">アルバムを見る</a>
+      </div>
+      <div class="album-card">
+        <div class="album-thumb">🌅</div>
+        <div class="album-info"><h4>稽古風景</h4><p>日々の稽古の様子</p></div>
+        <a href="https://photos.google.com/" target="_blank" class="album-link">アルバムを見る</a>
+      </div>
+      <div class="album-card">
+        <div class="album-thumb">📰</div>
+        <div class="album-info"><h4>取材</h4><p>メディア掲載</p></div>
+        <a href="https://photos.google.com/" target="_blank" class="album-link">アルバムを見る</a>
+      </div>
+    </div>
+  </div>
+</main>
+<footer>
+  <div class="footer-logo">相模合気道連盟</div>
+  <div>神奈川県茅ヶ崎市・平塚市・寒川町・藤沢市</div>
+  <div class="footer-divider"></div>
+  <div><a href="index.html">ホーム</a> ／ <a href="schedule.html">スケジュール</a> ／ <a href="contact.html">ご連絡先</a></div>
+  <div style="margin-top:12px">© 2026 相模合気道連盟</div>
+</footer>
+</body></html>
