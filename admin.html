@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スケジュール管理｜相模合気道連盟</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy:#1a2744; --navy2:#243258;
+      --gold:#9a7b0a; --gold-light:#c4960e;
+      --chigasaki:#1D9E75; --hiratsuka:#378ADD;
+      --samukawa:#D85A30; --fujisawa:#9F77DD;
+      --white:#ffffff; --cream:#fafaf7;
+      --surface2:#f0ede6; --border:#e8e2d6;
+      --text:#1a2744; --text2:#6b7280;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Noto Sans JP',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;}
+
+    /* ヘッダー */
+    header{background:var(--navy);border-bottom:2px solid var(--gold);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.2);}
+    .header-left{display:flex;align-items:center;gap:16px;}
+    .header-logo{font-family:'Noto Serif JP',serif;font-size:16px;font-weight:700;color:var(--gold-light);letter-spacing:2px;text-decoration:none;}
+    .header-logo span{font-size:11px;color:rgba(255,255,255,0.5);font-weight:400;margin-left:6px;font-family:'Noto Sans JP',sans-serif;}
+    .back-link{font-size:12px;color:rgba(255,255,255,0.6);text-decoration:none;border:1px solid rgba(255,255,255,0.2);padding:4px 10px;border-radius:4px;transition:all .2s;}
+    .back-link:hover{color:var(--gold-light);border-color:var(--gold);}
+    #authBtn{background:var(--gold-light);color:var(--navy);border:none;border-radius:4px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+    #authBtn.signed-in{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.2);}
+
+    /* ナビ */
+    nav{display:flex;gap:4px;padding:10px 16px;background:var(--white);border-bottom:1px solid var(--border);overflow-x:auto;box-shadow:0 1px 4px rgba(0,0,0,.04);}
+    nav button{background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:4px;padding:8px 14px;font-size:13px;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all .2s;}
+    nav button.active,nav button:hover{background:var(--navy);color:#fff;border-color:var(--navy);}
+
+    main{padding:20px;max-width:960px;margin:0 auto;}
+    .tab-content{display:none;}.tab-content.active{display:block;}
+
+    /* カレンダー */
+    .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+    .cal-header h2{font-family:'Noto Serif JP',serif;font-size:18px;font-weight:700;color:var(--navy);}
+    .cal-nav button{background:var(--white);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:6px 14px;cursor:pointer;font-size:15px;margin-left:4px;}
+    .dojo-filter{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+    .dojo-chip{border:2px solid transparent;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;opacity:.35;transition:opacity .2s;font-family:inherit;}
+    .dojo-chip.active{opacity:1;}
+    .dojo-chip.all{background:#e0e4ec;color:#333;border-color:#ccc;}
+    .dojo-chip.chigasaki{background:var(--chigasaki);color:#fff;}
+    .dojo-chip.hiratsuka{background:var(--hiratsuka);color:#fff;}
+    .dojo-chip.samukawa{background:var(--samukawa);color:#fff;}
+    .dojo-chip.fujisawa{background:var(--fujisawa);color:#fff;}
+
+    /* スピナー */
+    .cal-wrap{position:relative;}
+    .loading-overlay{display:none;position:absolute;inset:0;background:rgba(255,255,255,.75);border-radius:8px;align-items:center;justify-content:center;z-index:10;}
+    .loading-overlay.show{display:flex;}
+    .spinner{width:40px;height:40px;border:4px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .8s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* カレンダーグリッド */
+    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+    .cal-day-header{background:var(--surface2);text-align:center;padding:8px 4px;font-size:11px;color:var(--text2);font-weight:700;}
+    .cal-day-header:first-child{color:#e53e3e;}
+    .cal-day-header:last-child{color:#3182ce;}
+    .cal-cell{background:var(--white);min-height:76px;padding:4px;}
+    .cal-cell.other-month{background:#fafaf7;}
+    .cal-cell.other-month .cal-date{color:#ccc;}
+    .cal-cell.today{background:#f0f7f4;}
+    .cal-date{font-size:12px;font-weight:700;color:var(--text2);text-align:right;margin-bottom:3px;}
+    .cal-cell.today .cal-date{background:var(--navy);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;margin-left:auto;}
+    .cal-event{border-radius:3px;padding:2px 5px;font-size:10px;margin-bottom:2px;line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:600;}
+    .cal-event.chigasaki{background:#d4f0e5;color:#0d6e4e;}
+    .cal-event.hiratsuka{background:#dbeafe;color:#1e40af;}
+    .cal-event.samukawa{background:#fde8df;color:#9a3412;}
+    .cal-event.fujisawa{background:#ede9fe;color:#5b21b6;}
+    .cal-event.special{background:#fef9c3;color:#713f12;}
+
+    /* セクションカード */
+    .section-card{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.05);}
+    .section-card h3{font-size:11px;color:var(--text2);margin-bottom:14px;text-transform:uppercase;letter-spacing:2px;font-weight:700;}
+    .schedule-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+    .schedule-item:last-child{border-bottom:none;}
+    .schedule-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+    .schedule-info .title{font-size:14px;font-weight:600;}
+    .schedule-info .time{font-size:12px;color:var(--text2);margin-top:2px;}
+    .month-select{display:flex;gap:10px;align-items:center;margin-bottom:14px;}
+    .month-select input{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:8px 12px;font-size:14px;font-family:inherit;}
+    .btn-primary{background:var(--navy);color:#fff;border:none;border-radius:4px;padding:11px 20px;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-top:8px;font-family:inherit;transition:background .2s;}
+    .btn-primary:hover{background:var(--navy2);}
+    .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:11px 20px;font-size:14px;cursor:pointer;width:100%;margin-top:8px;font-family:inherit;}
+    .btn-danger{background:transparent;color:#e53e3e;border:1px solid #e53e3e;border-radius:4px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:inherit;}
+    #previewList{display:none;margin-top:14px;}
+    #previewList h4{font-size:13px;color:var(--text2);margin-bottom:8px;}
+    .preview-item{font-size:12px;padding:6px 0;border-bottom:1px solid var(--border);color:var(--text2);}
+    .event-list-item{display:flex;align-items:center;gap:10px;padding:12px;background:var(--white);border:1px solid var(--border);border-radius:6px;margin-bottom:8px;}
+    .event-list-item input[type=checkbox]{width:16px;height:16px;}
+    .event-list-info{flex:1;}
+    .event-list-info .etitle{font-size:14px;font-weight:600;}
+    .event-list-info .etime{font-size:12px;color:var(--text2);}
+    #deleteSelectedBtn{background:#e53e3e;color:#fff;border:none;border-radius:4px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+    #selectAllBtn{background:var(--white);color:var(--text2);border:1px solid var(--border);border-radius:4px;padding:8px 14px;font-size:13px;cursor:pointer;font-family:inherit;}
+    .dojo-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+    .dojo-tab{border:2px solid transparent;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;opacity:.45;font-family:inherit;color:#fff;transition:opacity .2s;}
+    .dojo-tab.active{opacity:1;box-shadow:0 2px 8px rgba(0,0,0,.15);}
+    .dojo-tab.chigasaki{background:var(--chigasaki);}
+    .dojo-tab.hiratsuka{background:var(--hiratsuka);}
+    .dojo-tab.samukawa{background:var(--samukawa);}
+    .dojo-tab.fujisawa{background:var(--fujisawa);}
+    .form-grid{display:grid;gap:12px;}
+    .form-group{display:flex;flex-direction:column;gap:5px;}
+    .form-group label{font-size:12px;color:var(--text2);font-weight:700;}
+    .form-group input,.form-group select,.form-group textarea{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:10px 12px;font-size:14px;font-family:inherit;}
+    .form-group textarea{resize:vertical;min-height:60px;}
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy);color:#fff;padding:12px 22px;border-radius:8px;font-size:14px;font-weight:600;z-index:999;transition:transform .3s ease;box-shadow:0 4px 16px rgba(0,0,0,.2);}
+    #toast.show{transform:translateX(-50%) translateY(0);}
+    .login-notice{text-align:center;padding:40px 20px;color:var(--text2);}
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <a class="header-logo" href="index.html">相模合気道連盟<span>スケジュール管理</span></a>
+    <a class="back-link" href="index.html">← サイトへ戻る</a>
+  </div>
+  <button id="authBtn" onclick="handleAuth()">🔑 ログイン</button>
+</header>
+<nav>
+  <button class="active" onclick="showTab('cal')">📅 カレンダー</button>
+  <button onclick="showTab('bulk')">🔄 月次生成</button>
+  <button onclick="showTab('list')">📋 一覧・削除</button>
+  <button onclick="showTab('add')">➕ 個別追加</button>
+</nav>
+<main>
+  <!-- カレンダータブ -->
+  <div id="tab-cal" class="tab-content active">
+    <div class="cal-header">
+      <h2 id="calTitle"></h2>
+      <div class="cal-nav"><button onclick="prevMonth()">◀</button><button onclick="nextMonth()">▶</button></div>
+    </div>
+    <div class="dojo-filter">
+      <button class="dojo-chip all active" onclick="filterDojo('all',this)">全て</button>
+      <button class="dojo-chip chigasaki active" onclick="filterDojo('茅ヶ崎',this)">茅ヶ崎</button>
+      <button class="dojo-chip hiratsuka active" onclick="filterDojo('平塚',this)">平塚</button>
+      <button class="dojo-chip samukawa active" onclick="filterDojo('寒川',this)">寒川</button>
+      <button class="dojo-chip fujisawa active" onclick="filterDojo('藤沢',this)">藤沢</button>
+    </div>
+    <div class="cal-wrap">
+      <div class="loading-overlay" id="calLoading"><div class="spinner"></div></div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+  </div>
+
+  <!-- 月次生成タブ -->
+  <div id="tab-bulk" class="tab-content">
+    <div class="section-card">
+      <h3>定期稽古スケジュール</h3>
+      <div class="schedule-item"><div class="schedule-dot" style="background:var(--chigasaki)"></div><div class="schedule-info"><div class="title">日曜　茅ヶ崎　朝</div><div class="time">9:30 〜 11:30</div></div></div>
+      <div class="schedule-item"><div class="schedule-dot" style="background:var(--hiratsuka)"></div><div class="schedule-info"><div class="title">日曜　平塚　昼</div><div class="time">15:30 〜 17:30</div></div></div>
+      <div class="schedule-item"><div class="schedule-dot" style="background:var(--chigasaki)"></div><div class="schedule-info"><div class="title">水曜　茅ヶ崎　夜</div><div class="time">18:30 〜 20:30</div></div></div>
+      <div class="schedule-item"><div class="schedule-dot" style="background:var(--samukawa)"></div><div class="schedule-info"><div class="title">土曜　寒川　昼</div><div class="time">12:30 〜 14:30</div></div></div>
+    </div>
+    <div class="section-card">
+      <h3>月次一括生成</h3>
+      <div class="month-select"><label style="font-size:13px;color:var(--text2)">対象年月</label><input type="month" id="bulkMonth"></div>
+      <button class="btn-secondary" onclick="previewBulk()">📋 プレビュー</button>
+      <div id="previewList">
+        <h4>登録予定の予定</h4>
+        <div id="previewItems"></div>
+        <button id="execBulkBtn" class="btn-primary" onclick="executeBulk()">📅 Googleカレンダーに一括登録</button>
+        <button id="cancelBulkBtn" class="btn-secondary" onclick="cancelPreview()">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 一覧・削除タブ -->
+  <div id="tab-list" class="tab-content">
+    <div class="dojo-filter" style="margin-bottom:12px">
+      <button class="dojo-chip all active" onclick="filterListDojo('all',this)">全て</button>
+      <button class="dojo-chip chigasaki active" onclick="filterListDojo('茅ヶ崎',this)">茅ヶ崎</button>
+      <button class="dojo-chip hiratsuka active" onclick="filterListDojo('平塚',this)">平塚</button>
+      <button class="dojo-chip samukawa active" onclick="filterListDojo('寒川',this)">寒川</button>
+      <button class="dojo-chip fujisawa active" onclick="filterListDojo('藤沢',this)">藤沢</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <button id="selectAllBtn" onclick="toggleSelectAll()">全選択</button>
+      <button id="deleteSelectedBtn" onclick="deleteSelected()">🗑 選択を削除</button>
+      <button id="pastToggleBtn" onclick="togglePast()" style="background:var(--white);color:var(--text2);border:1px solid var(--border);border-radius:4px;padding:8px 14px;font-size:13px;cursor:pointer;font-family:inherit;margin-left:auto">📅 過去も表示</button>
+    </div>
+    <div id="eventList"><div class="login-notice"><p>ログインすると予定が表示されます</p></div></div>
+  </div>
+
+  <!-- 個別追加タブ -->
+  <div id="tab-add" class="tab-content">
+    <div class="dojo-tabs">
+      <button class="dojo-tab chigasaki active" onclick="selectDojo('茅ヶ崎',this)">茅ヶ崎</button>
+      <button class="dojo-tab hiratsuka" onclick="selectDojo('平塚',this)">平塚</button>
+      <button class="dojo-tab samukawa" onclick="selectDojo('寒川',this)">寒川</button>
+      <button class="dojo-tab fujisawa" onclick="selectDojo('藤沢',this)">藤沢</button>
+    </div>
+    <div class="section-card">
+      <h3 id="addDojoTitle">茅ヶ崎道場　個別追加</h3>
+      <div class="form-grid">
+        <div class="form-group"><label>日付</label><input type="date" id="addDate"></div>
+        <div class="form-group">
+          <label>種別</label>
+          <select id="addType">
+            <option>一般稽古</option>
+            <option>少年稽古</option>
+            <option>師範稽古</option>
+            <option>昇段審査</option>
+            <option>特別稽古</option>
+            <option>演武大会</option>
+            <option>鏡開き</option>
+            <option>行事</option>
+            <option>合宿</option>
+            <option>その他</option>
+          </select>
+        </div>
+        <div class="form-group"><label>開始時間</label><input type="time" id="addStart" value="09:30"></div>
+        <div class="form-group"><label>終了時間</label><input type="time" id="addEnd" value="11:30"></div>
+        <div class="form-group"><label>メモ（任意）</label><textarea id="addMemo" placeholder="備考など（特別種別の場合はカレンダーに表示されます）"></textarea></div>
+      </div>
+      <button class="btn-primary" onclick="addEvent()">＋ Googleカレンダーに追加</button>
+      <button class="btn-secondary" onclick="clearAddForm()">キャンセル</button>
+    </div>
+  </div>
+</main>
+<div id="toast"></div>
+
+<script>
+  const CLIENT_ID='935966215687-63gp39209ckohqn5oe15m3oj4qm0tqkb.apps.googleusercontent.com';
+  const API_KEY='AIzaSyAAosuLB62BlomXqhdY8WAIYMVgux9mXKs';
+  const CALENDAR_ID='sagamiaikido1@gmail.com';
+  const SCOPES='https://www.googleapis.com/auth/calendar';
+  const DOJO_CLASS={'茅ヶ崎':'chigasaki','平塚':'hiratsuka','寒川':'samukawa','藤沢':'fujisawa'};
+  const SPECIAL_TYPES=['昇段審査','演武大会','鏡開き','行事','合宿','その他'];
+  const REGULAR_SCHEDULES=[
+    {dojo:'茅ヶ崎',day:0,start:'09:30',end:'11:30'},
+    {dojo:'平塚',day:0,start:'15:30',end:'17:30'},
+    {dojo:'茅ヶ崎',day:3,start:'18:30',end:'20:30'},
+    {dojo:'寒川',day:6,start:'12:30',end:'14:30'},
+  ];
+  let tokenClient,isSignedIn=false,currentYear=new Date().getFullYear(),currentMonth=new Date().getMonth();
+  let allEvents=[],activeFilter='all',listFilter='all',selectedDojo='茅ヶ崎',bulkPreviewEvents=[],showPast=false;
+
+  window.onload=function(){
+    const t=new Date(),m=String(t.getMonth()+1).padStart(2,'0'),d=String(t.getDate()).padStart(2,'0');
+    document.getElementById('bulkMonth').value=`${t.getFullYear()}-${m}`;
+    document.getElementById('addDate').value=`${t.getFullYear()}-${m}-${d}`;
+    gapi.load('client',initGapiClient);
+  };
+
+  function initGapiClient(){
+    gapi.client.load('calendar','v3').then(()=>{
+      tokenClient=google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:SCOPES,callback:(resp)=>{
+        if(resp.error){showToast('認証エラー: '+resp.error);return;}
+        isSignedIn=true;updateAuthBtn();loadEvents();
+      }});
+      renderCalendar();
+    });
+  }
+
+  function handleAuth(){
+    if(!isSignedIn){tokenClient.requestAccessToken({prompt:'consent'});}
+    else{google.accounts.oauth2.revoke(gapi.client.getToken().access_token,()=>{
+      gapi.client.setToken('');isSignedIn=false;allEvents=[];updateAuthBtn();renderCalendar();
+      document.getElementById('eventList').innerHTML='<div class="login-notice"><p>ログインすると予定が表示されます</p></div>';
+      showToast('ログアウトしました');
+    });}
+  }
+
+  function updateAuthBtn(){
+    const b=document.getElementById('authBtn');
+    if(isSignedIn){b.textContent='✅ ログイン中';b.className='signed-in';}
+    else{b.textContent='🔑 ログイン';b.className='';}
+  }
+
+  function showTab(tab){
+    document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+    document.getElementById('tab-'+tab).classList.add('active');
+    ['cal','bulk','list','add'].forEach((t,i)=>{if(t===tab)document.querySelectorAll('nav button')[i].classList.add('active');});
+    if(tab==='list')renderEventList();
+    if(tab==='cal')renderCalendar();
+  }
+
+  function renderCalendar(){
+    const grid=document.getElementById('calGrid');grid.innerHTML='';
+    ['日','月','火','水','木','金','土'].forEach(d=>{const h=document.createElement('div');h.className='cal-day-header';h.textContent=d;grid.appendChild(h);});
+    const year=currentYear,month=currentMonth,first=new Date(year,month,1).getDay(),last=new Date(year,month+1,0).getDate(),today=new Date();
+    document.getElementById('calTitle').textContent=`${year}年${month+1}月`;
+    for(let i=0;i<first;i++){const c=makeCell(new Date(year,month,0).getDate()-first+1+i,year,month-1);c.classList.add('other-month');grid.appendChild(c);}
+    for(let d=1;d<=last;d++){const c=makeCell(d,year,month);if(d===today.getDate()&&month===today.getMonth()&&year===today.getFullYear())c.classList.add('today');grid.appendChild(c);}
+    for(let i=1;i<=42-first-last;i++){const c=makeCell(i,year,month+1);c.classList.add('other-month');grid.appendChild(c);}
+  }
+
+  function makeCell(day,year,month){
+    const cell=document.createElement('div');cell.className='cal-cell';
+    const dd=document.createElement('div');dd.className='cal-date';dd.textContent=day;cell.appendChild(dd);
+    const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    allEvents.filter(e=>(e.start.dateTime||e.start.date||'').startsWith(ds)).forEach(ev=>{
+      const title=ev.summary||'',dojoName=Object.keys(DOJO_CLASS).find(d=>title.includes(d));
+      if(activeFilter!=='all'&&dojoName!==activeFilter)return;
+      const cls=dojoName?DOJO_CLASS[dojoName]:'special';
+      const evDiv=document.createElement('div');evDiv.className=`cal-event ${cls}`;
+      const t=ev.start.dateTime?ev.start.dateTime.substr(11,5):'';
+      let dispText;
+      if(dojoName){dispText=(t?t+' ':'')+title.substring(0,10);}
+      else{const memo=(ev.description||'').trim();dispText=memo?memo.substring(0,10):title.substring(0,10);}
+      evDiv.textContent=dispText;cell.appendChild(evDiv);
+    });
+    return cell;
+  }
+
+  function prevMonth(){currentMonth--;if(currentMonth<0){currentMonth=11;currentYear--;}renderCalendar();}
+  function nextMonth(){currentMonth++;if(currentMonth>11){currentMonth=0;currentYear++;}renderCalendar();}
+  function filterDojo(dojo,btn){activeFilter=dojo;document.querySelectorAll('.dojo-filter .dojo-chip').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderCalendar();}
+
+  function getTimeLabel(dateTime){
+    if(!dateTime)return'';
+    const h=parseInt(dateTime.substr(11,2));
+    if(h<12)return'朝';if(h<16)return'昼';if(h<18)return'夕';return'夜';
+  }
+
+  async function loadEvents(){
+    const overlay=document.getElementById('calLoading');overlay.classList.add('show');
+    try{
+      const now=new Date(),min=new Date(now.getFullYear(),now.getMonth()-1,1).toISOString(),max=new Date(now.getFullYear(),now.getMonth()+4,0).toISOString();
+      const resp=await gapi.client.calendar.events.list({calendarId:CALENDAR_ID,timeMin:min,timeMax:max,maxResults:500,singleEvents:true,orderBy:'startTime'});
+      allEvents=resp.result.items||[];renderCalendar();renderEventList();
+      showToast(`✅ ${allEvents.length}件の予定を読み込みました`);
+    }catch(e){showToast('予定の読み込みに失敗しました');}
+    finally{overlay.classList.remove('show');}
+  }
+
+  function togglePast(){
+    showPast=!showPast;
+    const btn=document.getElementById('pastToggleBtn');
+    btn.style.background=showPast?'#fef3c7':'var(--white)';
+    btn.style.color=showPast?'#92400e':'var(--text2)';
+    btn.style.borderColor=showPast?'#f59e0b':'var(--border)';
+    btn.textContent=showPast?'📅 未来のみ表示':'📅 過去も表示';
+    renderEventList();
+  }
+
+  function renderEventList(){
+    const container=document.getElementById('eventList');
+    if(!isSignedIn){container.innerHTML='<div class="login-notice"><p>ログインすると予定が表示されます</p></div>';return;}
+    const now=new Date().toISOString().substr(0,10);
+    let events=showPast?[...allEvents]:allEvents.filter(e=>(e.start.dateTime||e.start.date||'')>=now);
+    if(listFilter!=='all')events=events.filter(e=>(e.summary||'').includes(listFilter));
+    events.sort((a,b)=>(a.start.dateTime||a.start.date||'').localeCompare(b.start.dateTime||b.start.date||''));
+    if(!events.length){container.innerHTML='<div class="login-notice"><p>予定がありません</p></div>';return;}
+    container.innerHTML=events.map(ev=>{
+      const title=ev.summary||'(無題)',dojoName=Object.keys(DOJO_CLASS).find(d=>title.includes(d));
+      const cls=dojoName?DOJO_CLASS[dojoName]:'special';
+      const start=ev.start.dateTime||ev.start.date||'',dateStr=start.substr(0,10),timeStr=ev.start.dateTime?ev.start.dateTime.substr(11,5):'終日';
+      const isPast=dateStr<now;
+      const eventType=dojoName?title.replace(`${dojoName}道場　`,'').replace(`${dojoName} `,''):title;
+      const memo=(ev.description||'').trim();
+      const dispName=dojoName?title:(memo?`${eventType}　${memo}`:eventType);
+      const typeBadge=`<span style="background:#f0f0f0;color:#555;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;flex-shrink:0">${eventType}</span>`;
+      const dojoBadge=dojoName?`<span class="dojo-chip ${cls}" style="flex-shrink:0;opacity:1">${dojoName}</span>`:`<span class="dojo-chip" style="flex-shrink:0;opacity:1;background:#fef08a;color:#713f12;border-color:#fef08a">行事</span>`;
+      const pastStyle=isPast?'opacity:0.55;':'';
+      return `<div class="event-list-item" style="${pastStyle}"><input type="checkbox" data-id="${ev.id}">${dojoBadge}${typeBadge}<div class="event-list-info"><div class="etitle">${dispName}</div><div class="etime">${dateStr} ${timeStr}${isPast?' 〔済〕':''}</div></div><button class="btn-danger" onclick="deleteSingle('${ev.id}')">削除</button></div>`;
+    }).join('');
+  }
+
+  function filterListDojo(dojo,btn){listFilter=dojo;document.querySelectorAll('#tab-list .dojo-filter .dojo-chip').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderEventList();}
+  function toggleSelectAll(){const boxes=document.querySelectorAll('#eventList input[type=checkbox]'),allChecked=Array.from(boxes).every(b=>b.checked);boxes.forEach(b=>b.checked=!allChecked);}
+
+  async function deleteSelected(){
+    const ids=Array.from(document.querySelectorAll('#eventList input[type=checkbox]:checked')).map(b=>b.dataset.id);
+    if(!ids.length){showToast('削除する予定を選択してください');return;}
+    if(!confirm(`${ids.length}件を削除しますか？`))return;
+    let count=0;
+    for(const id of ids){try{await gapi.client.calendar.events.delete({calendarId:CALENDAR_ID,eventId:id});allEvents=allEvents.filter(e=>e.id!==id);count++;}catch(e){}}
+    renderEventList();renderCalendar();showToast(`🗑 ${count}件を削除しました`);
+  }
+
+  async function deleteSingle(id){
+    if(!confirm('この予定を削除しますか？'))return;
+    try{await gapi.client.calendar.events.delete({calendarId:CALENDAR_ID,eventId:id});allEvents=allEvents.filter(e=>e.id!==id);renderEventList();renderCalendar();showToast('🗑 削除しました');}
+    catch(e){showToast('削除に失敗しました');}
+  }
+
+  function previewBulk(){
+    const val=document.getElementById('bulkMonth').value;if(!val){showToast('年月を選択してください');return;}
+    const[year,month]=val.split('-').map(Number),lastDay=new Date(year,month,0).getDate();
+    bulkPreviewEvents=[];
+    for(let d=1;d<=lastDay;d++){
+      const dow=new Date(year,month-1,d).getDay();
+      REGULAR_SCHEDULES.forEach(s=>{
+        if(s.day===dow){
+          const ds=`${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          const label=getTimeLabel(`2000-01-01T${s.start}`);
+          const title=`${s.dojo} ${label}`;
+          bulkPreviewEvents.push({dojo:s.dojo,title,date:ds,start:s.start,end:s.end});
+        }
+      });
+    }
+    bulkPreviewEvents.sort((a,b)=>a.date.localeCompare(b.date));
+    document.getElementById('previewItems').innerHTML=bulkPreviewEvents.map(e=>`<div class="preview-item"><span class="dojo-chip ${DOJO_CLASS[e.dojo]}" style="font-size:11px;opacity:1">${e.dojo}</span> ${e.date} ${e.start}〜${e.end} ${e.title}</div>`).join('');
+    document.getElementById('previewList').style.display='block';
+  }
+
+  async function executeBulk(){
+    if(!isSignedIn){showToast('先にログインしてください');return;}
+    const execBtn=document.getElementById('execBulkBtn'),cancelBtn=document.getElementById('cancelBulkBtn');
+    execBtn.disabled=true;cancelBtn.disabled=true;
+    const total=bulkPreviewEvents.length;let count=0;
+    execBtn.textContent=`⏳ 登録中... 0/${total}件`;
+    for(const ev of bulkPreviewEvents){
+      try{
+        await gapi.client.calendar.events.insert({calendarId:CALENDAR_ID,resource:{summary:ev.title,start:{dateTime:`${ev.date}T${ev.start}:00+09:00`},end:{dateTime:`${ev.date}T${ev.end}:00+09:00`}}});
+        count++;execBtn.textContent=`⏳ 登録中... ${count}/${total}件`;
+      }catch(e){}
+    }
+    await loadEvents();cancelPreview();
+    execBtn.disabled=false;cancelBtn.disabled=false;
+    execBtn.textContent='📅 Googleカレンダーに一括登録';
+    showToast(`✅ ${count}件を登録しました`);
+  }
+
+  function cancelPreview(){document.getElementById('previewList').style.display='none';bulkPreviewEvents=[];}
+
+  function selectDojo(dojo,btn){
+    selectedDojo=dojo;
+    document.querySelectorAll('.dojo-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+    document.getElementById('addDojoTitle').textContent=`${dojo}道場　個別追加`;
+    const defaults={'茅ヶ崎':['09:30','11:30'],'平塚':['15:30','17:30'],'寒川':['12:30','14:30'],'藤沢':['09:30','11:30']};
+    if(defaults[dojo]){document.getElementById('addStart').value=defaults[dojo][0];document.getElementById('addEnd').value=defaults[dojo][1];}
+  }
+
+  async function addEvent(){
+    if(!isSignedIn){showToast('先にログインしてください');return;}
+    const date=document.getElementById('addDate').value,type=document.getElementById('addType').value,start=document.getElementById('addStart').value,end=document.getElementById('addEnd').value,memo=document.getElementById('addMemo').value;
+    if(!date||!start||!end){showToast('日付・時刻を入力してください');return;}
+    const isSpecial=SPECIAL_TYPES.includes(type);
+    const timeLabel=getTimeLabel(`2000-01-01T${start}`);
+    const title=isSpecial?type:(type==='一般稽古'?`${selectedDojo} ${timeLabel}`:`${selectedDojo} ${type}`);
+    try{
+      await gapi.client.calendar.events.insert({calendarId:CALENDAR_ID,resource:{summary:title,description:memo||'',start:{dateTime:`${date}T${start}:00+09:00`},end:{dateTime:`${date}T${end}:00+09:00`}}});
+      await loadEvents();clearAddForm();
+      showToast(isSpecial?(memo?`✅ 追加しました：${type}（${memo}）`:`✅ 追加しました：${type}`):`✅ 追加しました：${title}`);
+    }catch(e){showToast('追加に失敗しました');}
+  }
+
+  function clearAddForm(){document.getElementById('addMemo').value='';}
+  function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+</script>
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client"></script>
+</body>
+</html>
