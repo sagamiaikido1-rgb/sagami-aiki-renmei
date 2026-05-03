@@ -260,7 +260,7 @@
   }
 
   function handleAuth(){
-    if(!isSignedIn){tokenClient.requestAccessToken({prompt:'consent'});}
+    if(!isSignedIn){tokenClient.requestAccessToken({prompt:'select_account'});}
     else{google.accounts.oauth2.revoke(gapi.client.getToken().access_token,()=>{
       gapi.client.setToken('');isSignedIn=false;allEvents=[];updateAuthBtn();renderCalendar();
       document.getElementById('eventList').innerHTML='<div class="login-notice"><p>ログインすると予定が表示されます</p></div>';
