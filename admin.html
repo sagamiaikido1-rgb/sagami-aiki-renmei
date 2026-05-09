@@ -153,6 +153,7 @@
     <button onclick="showTab('list')">📋 一覧・削除</button>
     <button onclick="showTab('add')">➕ 個別追加</button>
     <button onclick="showTab('news')">📢 お知らせ</button>
+    <button onclick="showTab('manual')">📖 マニュアル</button>
   </nav>
   <main>
     <!-- カレンダー -->
@@ -269,6 +270,109 @@
       <div class="section-card">
         <h3>登録済みお知らせ一覧</h3>
         <div id="newsList"><div class="login-notice"><p>読み込み中...</p></div></div>
+      </div>
+
+    <!-- マニュアル -->
+    <div id="tab-manual" class="tab-content">
+      <div class="section-card">
+        <h3>重要なURL一覧</h3>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+          <div style="background:#f0f7f4;border:2px solid #1D9E75;border-radius:6px;padding:12px 16px;">
+            <div style="font-size:11px;color:#0d6e4e;font-weight:bold;margin-bottom:4px;">🌐 公式サイト（一般公開）</div>
+            <a href="https://sagamiaikido1-rgb.github.io/sagami-aiki-renmei/" target="_blank" style="color:#1a2744;font-size:13px;word-break:break-all;">https://sagamiaikido1-rgb.github.io/sagami-aiki-renmei/</a>
+          </div>
+          <div style="background:#f0f7f4;border:2px solid #1D9E75;border-radius:6px;padding:12px 16px;">
+            <div style="font-size:11px;color:#0d6e4e;font-weight:bold;margin-bottom:4px;">📅 スケジュールページ（一般公開）</div>
+            <a href="https://sagamiaikido1-rgb.github.io/sagami-aiki-renmei/schedule.html" target="_blank" style="color:#1a2744;font-size:13px;word-break:break-all;">https://sagamiaikido1-rgb.github.io/sagami-aiki-renmei/schedule.html</a>
+          </div>
+          <div style="background:#f0f7f4;border:2px solid #1D9E75;border-radius:6px;padding:12px 16px;">
+            <div style="font-size:11px;color:#0d6e4e;font-weight:bold;margin-bottom:4px;">📢 お知らせページ（一般公開）</div>
+            <a href="https://sagamiaikido1-rgb.github.io/sagami-aiki-renmei/news.html" target="_blank" style="color:#1a2744;font-size:13px;word-break:break-all;">https://sagamiaikido1-rgb.github.io/sagami-aiki-renmei/news.html</a>
+          </div>
+          <div style="background:#f0f0f8;border:2px solid #1a2744;border-radius:6px;padding:12px 16px;">
+            <div style="font-size:11px;color:#1a2744;font-weight:bold;margin-bottom:4px;">🔐 管理アプリ（このページ）</div>
+            <a href="https://sagamiaikido1-rgb.github.io/sagami-aiki-renmei/admin.html" target="_blank" style="color:#1a2744;font-size:13px;word-break:break-all;">https://sagamiaikido1-rgb.github.io/sagami-aiki-renmei/admin.html</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <h3>📅 スケジュール一括登録（毎月末の作業）</h3>
+        <div style="background:#fffbeb;border-left:4px solid #c4960e;padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:14px;font-size:13px;">
+          <b>定期稽古の時間</b><br>
+          日曜：茅ヶ崎 9:30〜11:30 ／ 平塚 15:30〜17:30<br>
+          水曜：茅ヶ崎 18:30〜20:30<br>
+          土曜：寒川 12:30〜14:30
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div style="background:#1a2744;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;flex-shrink:0;">1</div>
+            <div style="font-size:14px;">「🔄 月次生成」タブをクリック</div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div style="background:#1a2744;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;flex-shrink:0;">2</div>
+            <div style="font-size:14px;">対象年月を確認（翌月になっているか確認）</div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div style="background:#1a2744;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;flex-shrink:0;">3</div>
+            <div style="font-size:14px;">「📋 プレビュー」ボタンをクリックして内容を確認</div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div style="background:#1a2744;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;flex-shrink:0;">4</div>
+            <div style="font-size:14px;">「💾 一括登録」ボタンをクリックして完了</div>
+          </div>
+        </div>
+        <div style="background:#fff5f5;border-left:4px solid #e53e3e;padding:10px 14px;border-radius:0 6px 6px 0;margin-top:14px;font-size:13px;">
+          ⚠️ 同じ月を2回登録すると重複します。必ず一覧で確認してから登録してください。
+        </div>
+      </div>
+
+      <div class="section-card">
+        <h3>➕ スケジュール個別追加（行事・特別稽古）</h3>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div style="background:#1a2744;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;flex-shrink:0;">1</div>
+            <div style="font-size:14px;">「➕ 個別追加」タブをクリック</div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div style="background:#1a2744;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;flex-shrink:0;">2</div>
+            <div style="font-size:14px;">道場（茅ヶ崎・平塚・寒川・藤沢）を選択</div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div style="background:#1a2744;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;flex-shrink:0;">3</div>
+            <div style="font-size:14px;">日付・種別・時間・メモを入力</div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div style="background:#1a2744;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;flex-shrink:0;">4</div>
+            <div style="font-size:14px;">「＋ 追加する」ボタンをクリックして完了</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <h3>🗑 スケジュールの削除・変更</h3>
+        <p style="font-size:14px;margin-bottom:12px;"><b>削除：</b>「📋 一覧・削除」タブ → 対象の予定の「削除」ボタンをクリック</p>
+        <p style="font-size:14px;"><b>変更：</b>古い予定を削除 → 「➕ 個別追加」タブで正しい内容を再登録</p>
+      </div>
+
+      <div class="section-card">
+        <h3>📢 お知らせの登録・削除</h3>
+        <p style="font-size:14px;margin-bottom:10px;"><b>登録：</b>「📢 お知らせ」タブ → 日付・カテゴリ・内容を入力 → 「➕ 追加する」</p>
+        <p style="font-size:14px;margin-bottom:12px;"><b>削除：</b>「📢 お知らせ」タブ下部の一覧 → 「削除」ボタンをクリック</p>
+        <div style="font-size:13px;background:#f8f8f8;border-radius:6px;padding:10px 14px;">
+          カテゴリの種類：
+          <span style="background:#1a2744;color:white;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:bold;margin:0 4px;">新着</span>
+          <span style="background:#9a7b0a;color:white;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:bold;margin:0 4px;">行事</span>
+          <span style="background:#e8e2d6;color:#1a2744;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:bold;margin:0 4px;">お知らせ</span>
+        </div>
+      </div>
+
+      <div class="section-card" style="border-top:3px solid #38a169;">
+        <h3>💰 料金について</h3>
+        <div style="background:#f0fff4;border:2px solid #38a169;border-radius:6px;padding:14px 18px;font-size:14px;">
+          ✅ このサイトは<b>完全無料</b>で運用できます。<br>
+          GitHub Pages・Firebase ともに無料プランで十分対応できます。
+        </div>
       </div>
     </div>
   </main>
@@ -564,7 +668,7 @@
     document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
     document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
     document.getElementById('tab-'+tab).classList.add('active');
-    ['cal','bulk','list','add','news'].forEach((t,i)=>{if(t===tab)document.querySelectorAll('nav button')[i].classList.add('active');});
+    ['cal','bulk','list','add','news','manual'].forEach((t,i)=>{if(t===tab)document.querySelectorAll('nav button')[i].classList.add('active');});
     if(tab==='list')renderEventList();
     if(tab==='cal')renderCalendar();
     if(tab==='news')renderNewsList();
