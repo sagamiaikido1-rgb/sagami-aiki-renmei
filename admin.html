@@ -152,6 +152,7 @@
     <button onclick="showTab('bulk')">🔄 月次生成</button>
     <button onclick="showTab('list')">📋 一覧・削除</button>
     <button onclick="showTab('add')">➕ 個別追加</button>
+    <button onclick="showTab('news')">📢 お知らせ</button>
   </nav>
   <main>
     <!-- カレンダー -->
@@ -240,6 +241,36 @@
         <button class="btn-secondary" onclick="clearAddForm()">キャンセル</button>
       </div>
     </div>
+
+    <!-- お知らせ管理 -->
+    <div id="tab-news" class="tab-content">
+      <div class="section-card">
+        <h3>お知らせを追加</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>日付（例：2026.05.09）</label>
+            <input type="text" id="newsDate" placeholder="2026.05.09">
+          </div>
+          <div class="form-group">
+            <label>カテゴリ</label>
+            <select id="newsCategory">
+              <option value="新着">新着</option>
+              <option value="行事">行事</option>
+              <option value="お知らせ">お知らせ</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>内容</label>
+            <textarea id="newsText" placeholder="お知らせの内容を入力してください"></textarea>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="addNews()">➕ 追加する</button>
+      </div>
+      <div class="section-card">
+        <h3>登録済みお知らせ一覧</h3>
+        <div id="newsList"><div class="login-notice"><p>読み込み中...</p></div></div>
+      </div>
+    </div>
   </main>
 </div>
 <div id="toast"></div>
@@ -285,6 +316,7 @@
       document.getElementById('loginScreen').style.display='none';
       document.getElementById('mainScreen').style.display='block';
       loadEvents();
+      loadNews();
       renderCalendar();
       const t=new Date(),m=String(t.getMonth()+1).padStart(2,'0'),d=String(t.getDate()).padStart(2,'0');
       document.getElementById('bulkMonth').value=`${t.getFullYear()}-${m}`;
@@ -532,15 +564,70 @@
     document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
     document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
     document.getElementById('tab-'+tab).classList.add('active');
-    ['cal','bulk','list','add'].forEach((t,i)=>{if(t===tab)document.querySelectorAll('nav button')[i].classList.add('active');});
+    ['cal','bulk','list','add','news'].forEach((t,i)=>{if(t===tab)document.querySelectorAll('nav button')[i].classList.add('active');});
     if(tab==='list')renderEventList();
     if(tab==='cal')renderCalendar();
+    if(tab==='news')renderNewsList();
   };
 
   window.showToast=function(msg){
     const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
     setTimeout(()=>t.classList.remove('show'),3000);
   };
+
+  // お知らせ読み込み
+  let allNews = [];
+  async function loadNews(){
+    try{
+      const q = query(collection(db,'news'), orderBy('createdAt','desc'));
+      const snap = await getDocs(q);
+      allNews = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      renderNewsList();
+    }catch(e){}
+  }
+
+  window.renderNewsList = function(){
+    const container = document.getElementById('newsList');
+    if(!container) return;
+    if(!allNews.length){container.innerHTML='<div class="login-notice"><p>お知らせがありません</p></div>';return;}
+    const TAG_COLORS = {'新着':'background:#1a2744;color:#fff;','行事':'background:#9a7b0a;color:#fff;','お知らせ':'background:#e8e2d6;color:#1a2744;'};
+    container.innerHTML = allNews.map(n=>{
+      const tagStyle = TAG_COLORS[n.category]||'background:#e8e2d6;color:#1a2744;';
+      return `<div class="event-list-item">
+        <div class="event-list-info" style="flex:1">
+          <div class="etitle"><span style="font-size:12px;color:#9a7b0a;margin-right:8px">${n.date}</span><span style="padding:2px 8px;border-radius:3px;font-size:11px;font-weight:700;${tagStyle}">${n.category}</span></div>
+          <div class="etime" style="margin-top:4px">${n.text}</div>
+        </div>
+        <button class="btn-danger" onclick="deleteNews('${n.id}')">削除</button>
+      </div>`;
+    }).join('');
+  };
+
+  window.addNews = async function(){
+    const date = document.getElementById('newsDate').value.trim();
+    const category = document.getElementById('newsCategory').value;
+    const text = document.getElementById('newsText').value.trim();
+    if(!date||!text){showToast('日付と内容を入力してください');return;}
+    try{
+      const docRef = await addDoc(collection(db,'news'),{date,category,text,createdAt:new Date().toISOString()});
+      allNews.unshift({id:docRef.id,date,category,text});
+      renderNewsList();
+      document.getElementById('newsDate').value='';
+      document.getElementById('newsText').value='';
+      showToast('✅ お知らせを追加しました');
+    }catch(e){showToast('追加に失敗しました');}
+  };
+
+  window.deleteNews = async function(id){
+    if(!confirm('このお知らせを削除しますか？'))return;
+    try{
+      await deleteDoc(doc(db,'news',id));
+      allNews = allNews.filter(n=>n.id!==id);
+      renderNewsList();
+      showToast('🗑 削除しました');
+    }catch(e){showToast('削除に失敗しました');}
+  };
+
 </script>
 </body>
 </html>
