@@ -116,6 +116,26 @@
     #toast.show{transform:translateX(-50%) translateY(0);}
     .login-notice{text-align:center;padding:40px 20px;color:var(--text2);}
     @media(max-width:768px){.login-box{width:90%;padding:32px 24px;}}
+
+    /* 写真管理 */
+    .gallery-cat-badge{display:inline-block;padding:2px 10px;border-radius:3px;font-size:11px;font-weight:700;}
+    .cat-演武大会{background:#fee2e2;color:#991b1b;}
+    .cat-昇段祝い{background:#fef3c7;color:#92400e;}
+    .cat-懇親会{background:#dbeafe;color:#1e40af;}
+    .cat-講習会{background:#ede9fe;color:#5b21b6;}
+    .cat-合宿{background:#d1fae5;color:#065f46;}
+    .cat-その他{background:#f1f5f9;color:#475569;}
+    .photo-upload-area{border:2px dashed var(--border);border-radius:8px;padding:32px 16px;text-align:center;cursor:pointer;color:var(--text2);font-size:13px;transition:.2s;}
+    .photo-upload-area:hover,.photo-upload-area.drag{background:var(--surface2);border-color:var(--gold-light);}
+    .photo-preview-grid,.event-photos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:14px;}
+    .photo-preview-item{position:relative;border-radius:6px;overflow:hidden;background:var(--surface2);aspect-ratio:1;}
+    .photo-preview-item img{width:100%;height:100%;object-fit:cover;display:block;}
+    .photo-preview-item .rm-btn{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:13px;line-height:1;cursor:pointer;}
+    .photo-preview-item .caption-inp{position:absolute;bottom:0;left:0;right:0;border:none;background:rgba(0,0,0,.55);color:#fff;font-size:11px;padding:4px 6px;font-family:inherit;width:100%;}
+    .gallery-event-card{background:var(--white);border:1px solid var(--border);border-radius:6px;margin-bottom:10px;overflow:hidden;}
+    .gallery-event-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+    .gallery-event-meta{font-size:12px;color:var(--text2);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap;}
+    .gallery-event-card .event-photos-grid{padding:12px 14px;}
   </style>
 </head>
 <body>
@@ -153,6 +173,7 @@
     <button onclick="showTab('list')">📋 一覧・削除</button>
     <button onclick="showTab('add')">➕ 個別追加</button>
     <button onclick="showTab('news')">📢 お知らせ</button>
+    <button onclick="showTab('photo')">📷 写真管理</button>
     <button onclick="showTab('manual')">📖 マニュアル</button>
   </nav>
   <main>
@@ -273,6 +294,56 @@
       </div>
     </div>
 
+    <!-- 写真管理 -->
+    <div id="tab-photo" class="tab-content">
+      <div class="section-card">
+        <h3>撮影イベント登録</h3>
+        <input type="hidden" id="geEditId">
+        <div class="form-grid">
+          <div class="form-group"><label>イベント名</label><input type="text" id="geName" placeholder="例：令和8年度 演武大会"></div>
+          <div class="form-group"><label>撮影日</label><input type="date" id="geDate"></div>
+          <div class="form-group">
+            <label>分類</label>
+            <select id="geCat">
+              <option value="演武大会">演武大会</option>
+              <option value="昇段祝い">昇段祝い</option>
+              <option value="懇親会">懇親会</option>
+              <option value="講習会">講習会</option>
+              <option value="合宿">合宿</option>
+              <option value="その他">その他</option>
+            </select>
+          </div>
+          <div class="form-group"><label>説明（任意）</label><textarea id="geDesc" placeholder="イベントの概要・補足"></textarea></div>
+          <div class="form-group">
+            <label>公開設定</label>
+            <select id="gePub"><option value="true">公開する</option><option value="false">下書き（非公開）</option></select>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="saveGalleryEvent()">イベントを保存</button>
+        <button class="btn-secondary" onclick="resetGalleryEventForm()">リセット</button>
+      </div>
+
+      <div class="section-card">
+        <h3>写真をアップロード</h3>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>対象イベント</label>
+          <select id="photoTargetEvent"><option value="">— イベントを選んでください —</option></select>
+        </div>
+        <div class="photo-upload-area" id="photoDropArea" onclick="document.getElementById('photoFileInput').click()">
+          📷<br>クリックまたはドラッグ＆ドロップで写真を選択<br>
+          <span style="font-size:11px;">JPG・PNG・WEBP対応　1枚あたり最大5MB</span>
+          <input type="file" id="photoFileInput" accept="image/*" multiple style="display:none;">
+        </div>
+        <div class="photo-preview-grid" id="photoPreviewGrid"></div>
+        <button class="btn-primary" id="btnPhotoSave" onclick="saveGalleryPhotos()" style="margin-top:12px;">写真を保存</button>
+      </div>
+
+      <div class="section-card">
+        <h3>登録済みイベント一覧</h3>
+        <div id="galleryEventList"><div class="login-notice"><p>読み込み中...</p></div></div>
+      </div>
+    </div>
+
     <!-- マニュアル -->
     <div id="tab-manual" class="tab-content">
       <div class="section-card">
@@ -385,8 +456,10 @@
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy }
+  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+  import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject }
+    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 
   // ★★★ 以下をFirebaseコンソールの設定値に置き換えてください ★★★
   const firebaseConfig = {
@@ -401,6 +474,7 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
+  const storage = getStorage(app);
 
   const DOJO_CLASS = {'茅ヶ崎':'chigasaki','平塚':'hiratsuka','寒川':'samukawa','藤沢':'fujisawa'};
   const SPECIAL_TYPES = ['昇段審査','演武大会','鏡開き','行事','合宿','その他'];
@@ -414,6 +488,9 @@
   let allEvents=[], activeFilter='all', listFilter='all', selectedDojo='茅ヶ崎';
   let bulkPreviewEvents=[], showPast=false;
   let currentYear=new Date().getFullYear(), currentMonth=new Date().getMonth();
+  let allGalleryEvents=[], allGalleryPhotos=[], pendingGalleryPhotos=[];
+
+  function escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
   // 認証状態監視
   onAuthStateChanged(auth, user => {
@@ -422,10 +499,12 @@
       document.getElementById('mainScreen').style.display='block';
       loadEvents();
       loadNews();
+      loadGalleryEvents();
       renderCalendar();
       const t=new Date(),m=String(t.getMonth()+1).padStart(2,'0'),d=String(t.getDate()).padStart(2,'0');
       document.getElementById('bulkMonth').value=`${t.getFullYear()}-${m}`;
       document.getElementById('addDate').value=`${t.getFullYear()}-${m}-${d}`;
+      document.getElementById('geDate').value=`${t.getFullYear()}-${m}-${d}`;
     } else {
       document.getElementById('loginScreen').style.display='flex';
       document.getElementById('mainScreen').style.display='none';
@@ -669,10 +748,11 @@
     document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
     document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
     document.getElementById('tab-'+tab).classList.add('active');
-    ['cal','bulk','list','add','news','manual'].forEach((t,i)=>{if(t===tab)document.querySelectorAll('nav button')[i].classList.add('active');});
+    ['cal','bulk','list','add','news','photo','manual'].forEach((t,i)=>{if(t===tab)document.querySelectorAll('nav button')[i].classList.add('active');});
     if(tab==='list')renderEventList();
     if(tab==='cal')renderCalendar();
     if(tab==='news')renderNewsList();
+    if(tab==='photo')renderGalleryEventList();
   };
 
   window.showToast=function(msg){
@@ -731,6 +811,190 @@
       renderNewsList();
       showToast('🗑 削除しました');
     }catch(e){showToast('削除に失敗しました');}
+  };
+
+  /* =============================================
+     写真ギャラリー管理
+     ============================================= */
+  async function loadGalleryEvents(){
+    try{
+      const q=query(collection(db,'gallery_events'),orderBy('shoot_date','desc'));
+      const snap=await getDocs(q);
+      allGalleryEvents=snap.docs.map(d=>({id:d.id,...d.data()}));
+      const psnap=await getDocs(collection(db,'gallery_photos'));
+      allGalleryPhotos=psnap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+      renderGalleryEventList();
+    }catch(e){showToast('写真データの読み込みに失敗しました');}
+  }
+
+  function renderGalleryEventList(){
+    const sel=document.getElementById('photoTargetEvent');
+    const cur=sel.value;
+    sel.innerHTML='<option value="">— イベントを選んでください —</option>'+
+      allGalleryEvents.map(e=>`<option value="${e.id}" ${e.id===cur?'selected':''}>${escH(e.event_name)}（${e.shoot_date}）</option>`).join('');
+
+    const listEl=document.getElementById('galleryEventList');
+    if(!allGalleryEvents.length){listEl.innerHTML='<div class="login-notice"><p>まだイベントが登録されていません</p></div>';return;}
+    listEl.innerHTML=allGalleryEvents.map(ev=>{
+      const photos=allGalleryPhotos.filter(p=>p.event_id===ev.id);
+      return `<div class="gallery-event-card">
+        <div class="gallery-event-card-header">
+          <div>
+            <div style="font-weight:700;font-size:14px;">${escH(ev.event_name)}</div>
+            <div class="gallery-event-meta">
+              <span>${ev.shoot_date}</span>
+              <span class="gallery-cat-badge cat-${escH(ev.category)}">${escH(ev.category)}</span>
+              <span>${photos.length}枚</span>
+              ${ev.is_published===false?'<span style="color:#e53e3e">非公開</span>':''}
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-secondary" style="width:auto;margin:0;padding:6px 12px;font-size:12px;" onclick="editGalleryEvent('${ev.id}')">編集</button>
+            <button class="btn-danger" onclick="deleteGalleryEvent('${ev.id}')">削除</button>
+          </div>
+        </div>
+        ${photos.length?`<div class="event-photos-grid">
+          ${photos.map(p=>`<div class="photo-preview-item">
+            <img src="${p.image_url}" alt="${escH(p.caption)}">
+            <button class="rm-btn" onclick="deleteGalleryPhoto('${p.id}')">×</button>
+          </div>`).join('')}
+        </div>`:'<p style="padding:0 14px 14px;color:var(--text2);font-size:13px;">写真がまだありません</p>'}
+      </div>`;
+    }).join('');
+  }
+
+  window.saveGalleryEvent=async function(){
+    const id=document.getElementById('geEditId').value.trim();
+    const name=document.getElementById('geName').value.trim();
+    const date=document.getElementById('geDate').value;
+    const cat=document.getElementById('geCat').value;
+    const desc=document.getElementById('geDesc').value.trim();
+    const pub=document.getElementById('gePub').value==='true';
+    if(!name||!date){showToast('イベント名と撮影日を入力してください');return;}
+    const data={event_name:name,shoot_date:date,category:cat,description:desc,is_published:pub};
+    try{
+      if(id){
+        await updateDoc(doc(db,'gallery_events',id),data);
+        const idx=allGalleryEvents.findIndex(e=>e.id===id);
+        if(idx>=0)allGalleryEvents[idx]={id,...data};
+        showToast('✅ イベントを更新しました');
+      }else{
+        const docRef=await addDoc(collection(db,'gallery_events'),data);
+        allGalleryEvents.unshift({id:docRef.id,...data});
+        showToast('✅ イベントを登録しました');
+      }
+      resetGalleryEventForm();
+      renderGalleryEventList();
+    }catch(e){showToast('保存に失敗しました');}
+  };
+
+  window.resetGalleryEventForm=function(){
+    document.getElementById('geEditId').value='';
+    document.getElementById('geName').value='';
+    document.getElementById('geDesc').value='';
+    document.getElementById('geCat').value='演武大会';
+    document.getElementById('gePub').value='true';
+    const t=new Date();
+    document.getElementById('geDate').value=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+  };
+
+  window.editGalleryEvent=function(id){
+    const ev=allGalleryEvents.find(e=>e.id===id);
+    if(!ev)return;
+    document.getElementById('geEditId').value=ev.id;
+    document.getElementById('geName').value=ev.event_name;
+    document.getElementById('geDate').value=ev.shoot_date;
+    document.getElementById('geCat').value=ev.category;
+    document.getElementById('geDesc').value=ev.description||'';
+    document.getElementById('gePub').value=String(ev.is_published!==false);
+    showToast('編集モード：内容を修正して「イベントを保存」を押してください');
+    document.querySelector('#tab-photo .section-card').scrollIntoView({behavior:'smooth'});
+  };
+
+  window.deleteGalleryEvent=async function(id){
+    const ev=allGalleryEvents.find(e=>e.id===id);
+    if(!confirm(`「${ev?ev.event_name:''}」と紐づく写真をすべて削除しますか？`))return;
+    const photos=allGalleryPhotos.filter(p=>p.event_id===id);
+    for(const p of photos){
+      try{ if(p.storage_path) await deleteObject(ref(storage,p.storage_path)); }catch(e){}
+      try{ await deleteDoc(doc(db,'gallery_photos',p.id)); }catch(e){}
+    }
+    try{ await deleteDoc(doc(db,'gallery_events',id)); }catch(e){}
+    allGalleryEvents=allGalleryEvents.filter(e=>e.id!==id);
+    allGalleryPhotos=allGalleryPhotos.filter(p=>p.event_id!==id);
+    renderGalleryEventList();
+    showToast('🗑 削除しました');
+  };
+
+  // 写真アップロード（ドラッグ＆ドロップ／複数選択）
+  const galleryDropArea=document.getElementById('photoDropArea');
+  if(galleryDropArea){
+    ['dragenter','dragover'].forEach(ev=>galleryDropArea.addEventListener(ev,e=>{e.preventDefault();galleryDropArea.classList.add('drag');}));
+    ['dragleave','drop'].forEach(ev=>galleryDropArea.addEventListener(ev,e=>{e.preventDefault();galleryDropArea.classList.remove('drag');}));
+    galleryDropArea.addEventListener('drop',e=>handleGalleryFiles(e.dataTransfer.files));
+    document.getElementById('photoFileInput').addEventListener('change',e=>handleGalleryFiles(e.target.files));
+  }
+
+  function handleGalleryFiles(files){
+    [...files].forEach(file=>{
+      if(!file.type.startsWith('image/')){showToast('画像ファイルを選んでください');return;}
+      if(file.size>5*1024*1024){showToast(`${file.name} は5MBを超えています`);return;}
+      const reader=new FileReader();
+      reader.onload=ev=>{pendingGalleryPhotos.push({file,previewUrl:ev.target.result,caption:''});renderGalleryPreview();};
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderGalleryPreview(){
+    const grid=document.getElementById('photoPreviewGrid');
+    grid.innerHTML=pendingGalleryPhotos.map((p,i)=>`
+      <div class="photo-preview-item">
+        <img src="${p.previewUrl}" alt="">
+        <button class="rm-btn" onclick="removePendingGalleryPhoto(${i})">×</button>
+        <input class="caption-inp" type="text" placeholder="説明（任意）" value="${escH(p.caption)}" oninput="updateGalleryCaption(${i},this.value)">
+      </div>
+    `).join('');
+  }
+  window.removePendingGalleryPhoto=function(i){pendingGalleryPhotos.splice(i,1);renderGalleryPreview();};
+  window.updateGalleryCaption=function(i,val){if(pendingGalleryPhotos[i])pendingGalleryPhotos[i].caption=val;};
+
+  window.saveGalleryPhotos=async function(){
+    const evId=document.getElementById('photoTargetEvent').value;
+    if(!evId){showToast('対象イベントを選択してください');return;}
+    if(!pendingGalleryPhotos.length){showToast('写真を選んでください');return;}
+    const btn=document.getElementById('btnPhotoSave');
+    btn.disabled=true;btn.textContent='アップロード中...';
+    let saved=0;
+    const baseOrder=allGalleryPhotos.filter(p=>p.event_id===evId).length;
+    for(let i=0;i<pendingGalleryPhotos.length;i++){
+      const p=pendingGalleryPhotos[i];
+      try{
+        const safeName=p.file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+        const path=`gallery/${evId}/${Date.now()}_${Math.random().toString(36).slice(2,8)}_${safeName}`;
+        const sRef=ref(storage,path);
+        await uploadBytes(sRef,p.file);
+        const url=await getDownloadURL(sRef);
+        const data={event_id:evId,image_url:url,storage_path:path,caption:p.caption,sort_order:baseOrder+i,is_published:true};
+        const docRef=await addDoc(collection(db,'gallery_photos'),data);
+        allGalleryPhotos.push({id:docRef.id,...data});
+        saved++;
+      }catch(e){}
+    }
+    btn.disabled=false;btn.textContent='写真を保存';
+    pendingGalleryPhotos=[];
+    renderGalleryPreview();
+    renderGalleryEventList();
+    showToast(`✅ ${saved}枚の写真を保存しました`);
+  };
+
+  window.deleteGalleryPhoto=async function(id){
+    if(!confirm('この写真を削除しますか？'))return;
+    const p=allGalleryPhotos.find(x=>x.id===id);
+    try{ if(p&&p.storage_path) await deleteObject(ref(storage,p.storage_path)); }catch(e){}
+    try{ await deleteDoc(doc(db,'gallery_photos',id)); }catch(e){}
+    allGalleryPhotos=allGalleryPhotos.filter(x=>x.id!==id);
+    renderGalleryEventList();
+    showToast('🗑 写真を削除しました');
   };
 
 </script>
