@@ -201,7 +201,7 @@
       <div class="section-card">
         <h3>定期稽古スケジュール</h3>
         <div class="schedule-item"><div class="schedule-dot" style="background:var(--chigasaki)"></div><div class="schedule-info"><div class="title">日曜　茅ヶ崎　朝</div><div class="time">9:30 〜 11:30</div></div></div>
-        <div class="schedule-item"><div class="schedule-dot" style="background:var(--hiratsuka)"></div><div class="schedule-info"><div class="title">日曜　平塚　昼</div><div class="time">15:30 〜 17:30</div></div></div>
+        <div class="schedule-item"><div class="schedule-dot" style="background:var(--hiratsuka)"></div><div class="schedule-info"><div class="title">日曜　平塚　昼</div><div class="time">15:30 〜 16:30</div></div></div>
         <div class="schedule-item"><div class="schedule-dot" style="background:var(--chigasaki)"></div><div class="schedule-info"><div class="title">水曜　茅ヶ崎　夜</div><div class="time">18:30 〜 20:30</div></div></div>
         <div class="schedule-item"><div class="schedule-dot" style="background:var(--samukawa)"></div><div class="schedule-info"><div class="title">土曜　寒川　昼</div><div class="time">12:30 〜 14:30</div></div></div>
       </div>
@@ -284,6 +284,11 @@
           <div class="form-group">
             <label>内容</label>
             <textarea id="newsText" placeholder="お知らせの内容を入力してください"></textarea>
+          </div>
+          <div class="form-group">
+            <label>リンクURL（任意）</label>
+            <input type="url" id="newsUrl" placeholder="https://例：詳細ページのURLがあれば入力">
+            <div style="font-size:11px;color:var(--text2);margin-top:4px;">入力すると「詳細を見る」リンクが表示されます</div>
           </div>
         </div>
         <button class="btn-primary" onclick="addNews()">➕ 追加する</button>
@@ -372,7 +377,7 @@
         <h3>📅 スケジュール一括登録（毎月末の作業）</h3>
         <div style="background:#fffbeb;border-left:4px solid #c4960e;padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:14px;font-size:13px;">
           <b>定期稽古の時間</b><br>
-          日曜：茅ヶ崎 9:30〜11:30 ／ 平塚 15:30〜17:30<br>
+          日曜：茅ヶ崎 9:30〜11:30 ／ 平塚 15:30〜16:30<br>
           水曜：茅ヶ崎 18:30〜20:30<br>
           土曜：寒川 12:30〜14:30
         </div>
@@ -480,7 +485,7 @@
   const SPECIAL_TYPES = ['昇段審査','演武大会','鏡開き','行事','合宿','その他'];
   const REGULAR_SCHEDULES = [
     {dojo:'茅ヶ崎',day:0,start:'09:30',end:'11:30'},
-    {dojo:'平塚',  day:0,start:'15:30',end:'17:30'},
+    {dojo:'平塚',  day:0,start:'15:30',end:'16:30'},
     {dojo:'茅ヶ崎',day:3,start:'18:30',end:'20:30'},
     {dojo:'寒川',  day:6,start:'12:30',end:'14:30'},
   ];
@@ -717,7 +722,7 @@
     selectedDojo=dojo;
     document.querySelectorAll('.dojo-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
     document.getElementById('addDojoTitle').textContent=`${dojo}道場　個別追加`;
-    const defaults={'茅ヶ崎':['09:30','11:30'],'平塚':['15:30','17:30'],'寒川':['12:30','14:30'],'藤沢':['09:30','11:30']};
+    const defaults={'茅ヶ崎':['09:30','11:30'],'平塚':['15:30','16:30'],'寒川':['12:30','14:30'],'藤沢':['09:30','11:30']};
     if(defaults[dojo]){document.getElementById('addStart').value=defaults[dojo][0];document.getElementById('addEnd').value=defaults[dojo][1];}
   };
 
@@ -778,10 +783,19 @@
     const TAG_COLORS = {'新着':'background:#1a2744;color:#fff;','行事':'background:#9a7b0a;color:#fff;','お知らせ':'background:#e8e2d6;color:#1a2744;'};
     container.innerHTML = allNews.map(n=>{
       const tagStyle = TAG_COLORS[n.category]||'background:#e8e2d6;color:#1a2744;';
+      const linkHtml = n.url
+        ? `<a href="${escH(n.url)}" target="_blank" rel="noopener"
+             style="display:inline-block;margin-top:6px;font-size:12px;color:var(--gold-light);
+                    text-decoration:none;border:1px solid var(--gold-light);padding:2px 10px;
+                    border-radius:3px;transition:.2s;"
+             onmouseover="this.style.background='var(--gold-light)';this.style.color='#fff'"
+             onmouseout="this.style.background='';this.style.color='var(--gold-light)'">
+             🔗 詳細を見る</a>` : '';
       return `<div class="event-list-item">
         <div class="event-list-info" style="flex:1">
           <div class="etitle"><span style="font-size:12px;color:#9a7b0a;margin-right:8px">${n.date}</span><span style="padding:2px 8px;border-radius:3px;font-size:11px;font-weight:700;${tagStyle}">${n.category}</span></div>
           <div class="etime" style="margin-top:4px">${n.text}</div>
+          ${linkHtml}
         </div>
         <button class="btn-danger" onclick="deleteNews('${n.id}')">削除</button>
       </div>`;
@@ -789,16 +803,20 @@
   };
 
   window.addNews = async function(){
-    const date = document.getElementById('newsDate').value.trim();
+    const date     = document.getElementById('newsDate').value.trim();
     const category = document.getElementById('newsCategory').value;
-    const text = document.getElementById('newsText').value.trim();
+    const text     = document.getElementById('newsText').value.trim();
+    const url      = document.getElementById('newsUrl').value.trim();
     if(!date||!text){showToast('日付と内容を入力してください');return;}
+    const data = {date, category, text, createdAt: new Date().toISOString()};
+    if(url) data.url = url;
     try{
-      const docRef = await addDoc(collection(db,'news'),{date,category,text,createdAt:new Date().toISOString()});
-      allNews.unshift({id:docRef.id,date,category,text});
+      const docRef = await addDoc(collection(db,'news'), data);
+      allNews.unshift({id:docRef.id, ...data});
       renderNewsList();
       document.getElementById('newsDate').value='';
       document.getElementById('newsText').value='';
+      document.getElementById('newsUrl').value='';
       showToast('✅ お知らせを追加しました');
     }catch(e){showToast('追加に失敗しました');}
   };
