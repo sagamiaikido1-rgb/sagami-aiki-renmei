@@ -87,13 +87,6 @@
     @keyframes spin{to{transform:rotate(360deg);}}
     .gallery-empty-icon{font-size:40px;margin-bottom:12px;}
 
-    /* Instagram誘導 */
-    .insta-section{max-width:1100px;margin:0 auto;padding:0 24px 60px;}
-    .insta-card{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:28px 32px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
-    .insta-card p{font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.8;}
-    .insta-btn{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:white;padding:12px 28px;font-size:14px;font-weight:700;text-decoration:none;border-radius:6px;transition:opacity .2s;}
-    .insta-btn:hover{opacity:.88;}
-
     /* フッター */
     footer{background:var(--navy);color:rgba(255,255,255,.55);text-align:center;padding:32px 24px;font-size:12px;line-height:2.2;}
     footer strong{color:rgba(255,255,255,.9);}
@@ -102,7 +95,6 @@
     @media(max-width:768px){
       nav{display:none;}.hamburger{display:flex;}
       .photo-grid{grid-template-columns:repeat(2,1fr);}
-      .insta-card{padding:20px;}
     }
     @media(max-width:480px){
       .photo-grid{grid-template-columns:repeat(2,1fr);gap:6px;}
@@ -165,18 +157,6 @@
     <div class="gallery-loading">
       <div class="spinner"></div>
       <p>写真を読み込んでいます...</p>
-    </div>
-  </div>
-</div>
-
-<!-- Instagram誘導 -->
-<div class="insta-section">
-  <div class="insta-card">
-    <div>
-      <p>最新の稽古風景・演武・行事の写真はInstagramでも随時公開しています。</p>
-      <a href="https://www.instagram.com/sagami.aikido/" target="_blank" class="insta-btn">
-        📸 @sagami.aikido をフォローする
-      </a>
     </div>
   </div>
 </div>

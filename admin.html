@@ -471,7 +471,7 @@
     apiKey: "AIzaSyBfhzD-KOcyAneUEHDeAYx1WB7Tcefc1So",
     authDomain: "sagami-aikido-b5961.firebaseapp.com",
     projectId: "sagami-aikido-b5961",
-    storageBucket: "sagami-aikido-b5961.firebasestorage.app",
+    storageBucket: "sagami-aikido-b5961.appspot.com",
     messagingSenderId: "770248355445",
     appId: "1:770248355445:web:3104563942dfed363d923c"
   };
@@ -533,6 +533,8 @@
   window.doLogout = async function(){
     await signOut(auth);
     allEvents=[];
+    document.getElementById('loginEmail').value='';
+    document.getElementById('loginPassword').value='';
   };
 
   // Firestoreからイベント読み込み
@@ -982,28 +984,41 @@
     if(!evId){showToast('対象イベントを選択してください');return;}
     if(!pendingGalleryPhotos.length){showToast('写真を選んでください');return;}
     const btn=document.getElementById('btnPhotoSave');
-    btn.disabled=true;btn.textContent='アップロード中...';
-    let saved=0;
+    btn.disabled=true; btn.textContent='アップロード中...';
+    let saved=0, failed=0;
     const baseOrder=allGalleryPhotos.filter(p=>p.event_id===evId).length;
-    for(let i=0;i<pendingGalleryPhotos.length;i++){
-      const p=pendingGalleryPhotos[i];
-      try{
-        const safeName=p.file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-        const path=`gallery/${evId}/${Date.now()}_${Math.random().toString(36).slice(2,8)}_${safeName}`;
-        const sRef=ref(storage,path);
-        await uploadBytes(sRef,p.file);
-        const url=await getDownloadURL(sRef);
-        const data={event_id:evId,image_url:url,storage_path:path,caption:p.caption,sort_order:baseOrder+i,is_published:true};
-        const docRef=await addDoc(collection(db,'gallery_photos'),data);
-        allGalleryPhotos.push({id:docRef.id,...data});
-        saved++;
-      }catch(e){}
+    try{
+      for(let i=0;i<pendingGalleryPhotos.length;i++){
+        const p=pendingGalleryPhotos[i];
+        btn.textContent=`アップロード中... (${i+1}/${pendingGalleryPhotos.length})`;
+        try{
+          const safeName=p.file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+          const path=`gallery/${evId}/${Date.now()}_${Math.random().toString(36).slice(2,8)}_${safeName}`;
+          const sRef=ref(storage,path);
+          await uploadBytes(sRef,p.file);
+          const url=await getDownloadURL(sRef);
+          const data={event_id:evId,image_url:url,storage_path:path,caption:p.caption,sort_order:baseOrder+i,is_published:true};
+          const docRef=await addDoc(collection(db,'gallery_photos'),data);
+          allGalleryPhotos.push({id:docRef.id,...data});
+          saved++;
+        }catch(e){
+          failed++;
+          console.error(`写真アップロード失敗(${p.file.name}):`,e.code||e.message);
+        }
+      }
+    }finally{
+      btn.disabled=false; btn.textContent='写真を保存';
     }
-    btn.disabled=false;btn.textContent='写真を保存';
     pendingGalleryPhotos=[];
     renderGalleryPreview();
     renderGalleryEventList();
-    showToast(`✅ ${saved}枚の写真を保存しました`);
+    if(saved>0 && failed===0){
+      showToast(`✅ ${saved}枚の写真を保存しました`);
+    }else if(saved>0){
+      showToast(`⚠️ ${saved}枚保存・${failed}枚失敗しました`);
+    }else{
+      showToast('❌ アップロードに失敗しました。StorageのルールをFirebaseコンソールで確認してください');
+    }
   };
 
   window.deleteGalleryPhoto=async function(id){
