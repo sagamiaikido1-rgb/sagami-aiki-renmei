@@ -779,6 +779,7 @@
   window.renderNewsList = function(){
     const container = document.getElementById('newsList');
     if(!container) return;
+    allNews.sort((a,b)=>b.date.localeCompare(a.date));
     if(!allNews.length){container.innerHTML='<div class="login-notice"><p>お知らせがありません</p></div>';return;}
     const TAG_COLORS = {'新着':'background:#1a2744;color:#fff;','行事':'background:#9a7b0a;color:#fff;','お知らせ':'background:#e8e2d6;color:#1a2744;'};
     container.innerHTML = allNews.map(n=>{
