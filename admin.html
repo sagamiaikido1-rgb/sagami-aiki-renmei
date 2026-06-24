@@ -471,7 +471,7 @@
     apiKey: "AIzaSyBfhzD-KOcyAneUEHDeAYx1WB7Tcefc1So",
     authDomain: "sagami-aikido-b5961.firebaseapp.com",
     projectId: "sagami-aikido-b5961",
-    storageBucket: "sagami-aikido-b5961.appspot.com",
+    storageBucket: "sagami-aikido-b5961.firebasestorage.app",
     messagingSenderId: "770248355445",
     appId: "1:770248355445:web:3104563942dfed363d923c"
   };
@@ -979,13 +979,34 @@
   window.removePendingGalleryPhoto=function(i){pendingGalleryPhotos.splice(i,1);renderGalleryPreview();};
   window.updateGalleryCaption=function(i,val){if(pendingGalleryPhotos[i])pendingGalleryPhotos[i].caption=val;};
 
+  // タイムアウト付きアップロード（30秒）
+  function uploadWithTimeout(sRef, file, ms=30000){
+    return Promise.race([
+      uploadBytes(sRef, file),
+      new Promise((_,reject)=>setTimeout(()=>reject({code:'TIMEOUT'}), ms))
+    ]);
+  }
+
+  function storageErrorMsg(e){
+    if(!e) return '不明なエラー';
+    const code = e.code || '';
+    if(code==='TIMEOUT')               return 'タイムアウト（30秒）：Storageが有効か確認してください';
+    if(code==='storage/unauthorized')  return '権限エラー：StorageのセキュリティルールでWriteを許可してください';
+    if(code==='storage/unauthenticated') return '未ログイン状態です。再ログインしてください';
+    if(code==='storage/canceled')      return 'アップロードがキャンセルされました';
+    if(code==='storage/invalid-url')   return 'StorageBucketの設定が正しくありません';
+    if(code==='storage/unknown')       return 'Storageが有効になっていない可能性があります（Firebaseコンソールで確認）';
+    return e.message || code || '不明なエラー';
+  }
+
   window.saveGalleryPhotos=async function(){
     const evId=document.getElementById('photoTargetEvent').value;
     if(!evId){showToast('対象イベントを選択してください');return;}
     if(!pendingGalleryPhotos.length){showToast('写真を選んでください');return;}
     const btn=document.getElementById('btnPhotoSave');
-    btn.disabled=true; btn.textContent='アップロード中...';
+    btn.disabled=true;
     let saved=0, failed=0;
+    const errors=[];
     const baseOrder=allGalleryPhotos.filter(p=>p.event_id===evId).length;
     try{
       for(let i=0;i<pendingGalleryPhotos.length;i++){
@@ -995,7 +1016,7 @@
           const safeName=p.file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
           const path=`gallery/${evId}/${Date.now()}_${Math.random().toString(36).slice(2,8)}_${safeName}`;
           const sRef=ref(storage,path);
-          await uploadBytes(sRef,p.file);
+          await uploadWithTimeout(sRef, p.file);
           const url=await getDownloadURL(sRef);
           const data={event_id:evId,image_url:url,storage_path:path,caption:p.caption,sort_order:baseOrder+i,is_published:true};
           const docRef=await addDoc(collection(db,'gallery_photos'),data);
@@ -1003,7 +1024,9 @@
           saved++;
         }catch(e){
           failed++;
-          console.error(`写真アップロード失敗(${p.file.name}):`,e.code||e.message);
+          const msg=storageErrorMsg(e);
+          errors.push(`${p.file.name}：${msg}`);
+          console.error('アップロード失敗',p.file.name, e);
         }
       }
     }finally{
@@ -1014,10 +1037,12 @@
     renderGalleryEventList();
     if(saved>0 && failed===0){
       showToast(`✅ ${saved}枚の写真を保存しました`);
-    }else if(saved>0){
-      showToast(`⚠️ ${saved}枚保存・${failed}枚失敗しました`);
+    }else if(saved>0 && failed>0){
+      showToast(`⚠️ ${saved}枚保存・${failed}枚失敗\n${errors[0]}`);
+      console.warn('失敗詳細:', errors);
     }else{
-      showToast('❌ アップロードに失敗しました。StorageのルールをFirebaseコンソールで確認してください');
+      showToast(`❌ 失敗：${errors[0]||'不明なエラー'}`);
+      console.error('全件失敗:', errors);
     }
   };
 
