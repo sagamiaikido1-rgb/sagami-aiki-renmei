@@ -463,8 +463,7 @@
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
   import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-  import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject }
-    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
+  // Firebase Storage は無料プラン非対応のため不使用。画像はFirestoreに圧縮保存。
 
   // ★★★ 以下をFirebaseコンソールの設定値に置き換えてください ★★★
   const firebaseConfig = {
@@ -479,7 +478,6 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
-  const storage = getStorage(app);
 
   const DOJO_CLASS = {'茅ヶ崎':'chigasaki','平塚':'hiratsuka','寒川':'samukawa','藤沢':'fujisawa'};
   const SPECIAL_TYPES = ['昇段審査','演武大会','鏡開き','行事','合宿','その他'];
@@ -937,7 +935,6 @@
     if(!confirm(`「${ev?ev.event_name:''}」と紐づく写真をすべて削除しますか？`))return;
     const photos=allGalleryPhotos.filter(p=>p.event_id===id);
     for(const p of photos){
-      try{ if(p.storage_path) await deleteObject(ref(storage,p.storage_path)); }catch(e){}
       try{ await deleteDoc(doc(db,'gallery_photos',p.id)); }catch(e){}
     }
     try{ await deleteDoc(doc(db,'gallery_events',id)); }catch(e){}
@@ -979,24 +976,42 @@
   window.removePendingGalleryPhoto=function(i){pendingGalleryPhotos.splice(i,1);renderGalleryPreview();};
   window.updateGalleryCaption=function(i,val){if(pendingGalleryPhotos[i])pendingGalleryPhotos[i].caption=val;};
 
-  // タイムアウト付きアップロード（30秒）
-  function uploadWithTimeout(sRef, file, ms=30000){
-    return Promise.race([
-      uploadBytes(sRef, file),
-      new Promise((_,reject)=>setTimeout(()=>reject({code:'TIMEOUT'}), ms))
-    ]);
-  }
-
-  function storageErrorMsg(e){
-    if(!e) return '不明なエラー';
-    const code = e.code || '';
-    if(code==='TIMEOUT')               return 'タイムアウト（30秒）：Storageが有効か確認してください';
-    if(code==='storage/unauthorized')  return '権限エラー：StorageのセキュリティルールでWriteを許可してください';
-    if(code==='storage/unauthenticated') return '未ログイン状態です。再ログインしてください';
-    if(code==='storage/canceled')      return 'アップロードがキャンセルされました';
-    if(code==='storage/invalid-url')   return 'StorageBucketの設定が正しくありません';
-    if(code==='storage/unknown')       return 'Storageが有効になっていない可能性があります（Firebaseコンソールで確認）';
-    return e.message || code || '不明なエラー';
+  // Canvas APIで画像を圧縮してbase64に変換（最大1200px・JPEG75%）
+  function compressImage(file, maxPx=1200, quality=0.75){
+    return new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=e=>{
+        const img=new Image();
+        img.onload=()=>{
+          let w=img.width, h=img.height;
+          if(w>maxPx||h>maxPx){
+            if(w>h){h=Math.round(h*maxPx/w);w=maxPx;}
+            else{w=Math.round(w*maxPx/h);h=maxPx;}
+          }
+          const canvas=document.createElement('canvas');
+          canvas.width=w; canvas.height=h;
+          canvas.getContext('2d').drawImage(img,0,0,w,h);
+          const dataUrl=canvas.toDataURL('image/jpeg',quality);
+          // Firestore上限1MB超えチェック（base64は元サイズの約1.37倍）
+          const approxKB=Math.round(dataUrl.length*0.75/1024);
+          if(approxKB>900){
+            // 900KB超なら再圧縮（60%品質・1000px）
+            const canvas2=document.createElement('canvas');
+            const scale=Math.min(1000/w,1000/h,1);
+            canvas2.width=Math.round(w*scale);
+            canvas2.height=Math.round(h*scale);
+            canvas2.getContext('2d').drawImage(img,0,0,canvas2.width,canvas2.height);
+            resolve(canvas2.toDataURL('image/jpeg',0.60));
+          }else{
+            resolve(dataUrl);
+          }
+        };
+        img.onerror=reject;
+        img.src=e.target.result;
+      };
+      reader.onerror=reject;
+      reader.readAsDataURL(file);
+    });
   }
 
   window.saveGalleryPhotos=async function(){
@@ -1011,22 +1026,25 @@
     try{
       for(let i=0;i<pendingGalleryPhotos.length;i++){
         const p=pendingGalleryPhotos[i];
-        btn.textContent=`アップロード中... (${i+1}/${pendingGalleryPhotos.length})`;
+        btn.textContent=`保存中... (${i+1}/${pendingGalleryPhotos.length})`;
         try{
-          const safeName=p.file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-          const path=`gallery/${evId}/${Date.now()}_${Math.random().toString(36).slice(2,8)}_${safeName}`;
-          const sRef=ref(storage,path);
-          await uploadWithTimeout(sRef, p.file);
-          const url=await getDownloadURL(sRef);
-          const data={event_id:evId,image_url:url,storage_path:path,caption:p.caption,sort_order:baseOrder+i,is_published:true};
+          const compressed=await compressImage(p.file);
+          const approxKB=Math.round(compressed.length*0.75/1024);
+          const data={
+            event_id:evId,
+            image_url:compressed,
+            caption:p.caption,
+            sort_order:baseOrder+i,
+            is_published:true,
+            size_kb:approxKB
+          };
           const docRef=await addDoc(collection(db,'gallery_photos'),data);
           allGalleryPhotos.push({id:docRef.id,...data});
           saved++;
         }catch(e){
           failed++;
-          const msg=storageErrorMsg(e);
-          errors.push(`${p.file.name}：${msg}`);
-          console.error('アップロード失敗',p.file.name, e);
+          errors.push(`${p.file.name}：${e.message||'不明なエラー'}`);
+          console.error('保存失敗',p.file.name,e);
         }
       }
     }finally{
@@ -1035,21 +1053,19 @@
     pendingGalleryPhotos=[];
     renderGalleryPreview();
     renderGalleryEventList();
-    if(saved>0 && failed===0){
-      showToast(`✅ ${saved}枚の写真を保存しました`);
-    }else if(saved>0 && failed>0){
-      showToast(`⚠️ ${saved}枚保存・${failed}枚失敗\n${errors[0]}`);
-      console.warn('失敗詳細:', errors);
+    if(saved>0&&failed===0){
+      showToast(`✅ ${saved}枚を保存しました`);
+    }else if(saved>0){
+      showToast(`⚠️ ${saved}枚保存・${failed}枚失敗`);
+      console.warn('失敗詳細:',errors);
     }else{
-      showToast(`❌ 失敗：${errors[0]||'不明なエラー'}`);
-      console.error('全件失敗:', errors);
+      showToast(`❌ 保存失敗：${errors[0]||'不明なエラー'}`);
+      console.error('全件失敗:',errors);
     }
   };
 
   window.deleteGalleryPhoto=async function(id){
     if(!confirm('この写真を削除しますか？'))return;
-    const p=allGalleryPhotos.find(x=>x.id===id);
-    try{ if(p&&p.storage_path) await deleteObject(ref(storage,p.storage_path)); }catch(e){}
     try{ await deleteDoc(doc(db,'gallery_photos',id)); }catch(e){}
     allGalleryPhotos=allGalleryPhotos.filter(x=>x.id!==id);
     renderGalleryEventList();
