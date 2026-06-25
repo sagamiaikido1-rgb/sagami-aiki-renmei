@@ -301,6 +301,22 @@
 
     <!-- 写真管理 -->
     <div id="tab-photo" class="tab-content">
+
+      <!-- GitHub PAT設定 -->
+      <div class="section-card" id="patCard" style="background:#f8f6f0;border:1px solid #e8e2d6;">
+        <h3 style="font-size:13px;margin-bottom:8px;">🔑 GitHub アクセストークン設定</h3>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input type="password" id="githubPat" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+            style="flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:4px;font-family:monospace;font-size:13px;">
+          <button class="btn-primary" style="width:auto;margin:0;padding:8px 16px;" onclick="savePat()">保存</button>
+          <span id="patStatus" style="font-size:12px;color:var(--text2);"></span>
+        </div>
+        <p style="font-size:11px;color:var(--text2);margin-top:8px;">
+          ※ トークンはこの端末のみに保存されます。
+          <a href="https://github.com/settings/tokens/new?scopes=repo&description=sagami-aikido-gallery" target="_blank" style="color:var(--gold-light);">トークンを発行する →</a>
+        </p>
+      </div>
+
       <div class="section-card">
         <h3>撮影イベント登録</h3>
         <input type="hidden" id="geEditId">
@@ -503,6 +519,7 @@
       loadEvents();
       loadNews();
       loadGalleryEvents();
+      loadPat();
       renderCalendar();
       const t=new Date(),m=String(t.getMonth()+1).padStart(2,'0'),d=String(t.getDate()).padStart(2,'0');
       document.getElementById('bulkMonth').value=`${t.getFullYear()}-${m}`;
@@ -757,7 +774,7 @@
     if(tab==='list')renderEventList();
     if(tab==='cal')renderCalendar();
     if(tab==='news')renderNewsList();
-    if(tab==='photo')renderGalleryEventList();
+    if(tab==='photo'){loadPat();renderGalleryEventList();}
   };
 
   window.showToast=function(msg){
@@ -976,13 +993,39 @@
   window.removePendingGalleryPhoto=function(i){pendingGalleryPhotos.splice(i,1);renderGalleryPreview();};
   window.updateGalleryCaption=function(i,val){if(pendingGalleryPhotos[i])pendingGalleryPhotos[i].caption=val;};
 
-  // Canvas APIで画像を圧縮してbase64に変換（最大1200px・JPEG75%）
-  function compressImage(file, maxPx=1200, quality=0.75){
+  /* =============================================
+     GitHub PAT 管理
+     ============================================= */
+  const GH_OWNER  = 'sagamiaikido1-rgb';
+  const GH_REPO   = 'sagami-aiki-renmei';
+  const GH_BRANCH = 'main';
+
+  function loadPat(){
+    const pat = localStorage.getItem('gh_pat') || '';
+    const el  = document.getElementById('githubPat');
+    const st  = document.getElementById('patStatus');
+    if(el) el.value = pat;
+    if(st) st.textContent = pat ? '✅ 設定済み' : '⚠️ 未設定';
+    return pat;
+  }
+
+  window.savePat = function(){
+    const val = document.getElementById('githubPat').value.trim();
+    if(!val){ showToast('トークンを入力してください'); return; }
+    localStorage.setItem('gh_pat', val);
+    document.getElementById('patStatus').textContent = '✅ 設定済み';
+    showToast('✅ トークンを保存しました');
+  };
+
+  /* =============================================
+     画像圧縮（Canvas API）
+     ============================================= */
+  function compressImage(file, maxPx=1200, quality=0.82){
     return new Promise((resolve,reject)=>{
-      const reader=new FileReader();
-      reader.onload=e=>{
-        const img=new Image();
-        img.onload=()=>{
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
           let w=img.width, h=img.height;
           if(w>maxPx||h>maxPx){
             if(w>h){h=Math.round(h*maxPx/w);w=maxPx;}
@@ -991,76 +1034,118 @@
           const canvas=document.createElement('canvas');
           canvas.width=w; canvas.height=h;
           canvas.getContext('2d').drawImage(img,0,0,w,h);
-          const dataUrl=canvas.toDataURL('image/jpeg',quality);
-          // Firestore上限1MB超えチェック（base64は元サイズの約1.37倍）
-          const approxKB=Math.round(dataUrl.length*0.75/1024);
-          if(approxKB>900){
-            // 900KB超なら再圧縮（60%品質・1000px）
-            const canvas2=document.createElement('canvas');
-            const scale=Math.min(1000/w,1000/h,1);
-            canvas2.width=Math.round(w*scale);
-            canvas2.height=Math.round(h*scale);
-            canvas2.getContext('2d').drawImage(img,0,0,canvas2.width,canvas2.height);
-            resolve(canvas2.toDataURL('image/jpeg',0.60));
-          }else{
-            resolve(dataUrl);
-          }
+          resolve(canvas.toDataURL('image/jpeg', quality));
         };
-        img.onerror=reject;
-        img.src=e.target.result;
+        img.onerror = reject;
+        img.src = e.target.result;
       };
-      reader.onerror=reject;
+      reader.onerror = reject;
       reader.readAsDataURL(file);
     });
   }
 
-  window.saveGalleryPhotos=async function(){
-    const evId=document.getElementById('photoTargetEvent').value;
-    if(!evId){showToast('対象イベントを選択してください');return;}
-    if(!pendingGalleryPhotos.length){showToast('写真を選んでください');return;}
-    const btn=document.getElementById('btnPhotoSave');
-    btn.disabled=true;
+  /* =============================================
+     GitHub Contents API で画像をコミット
+     ============================================= */
+  async function uploadToGitHub(base64DataUrl, filePath, pat){
+    // "data:image/jpeg;base64," の prefix を除去
+    const content = base64DataUrl.split(',')[1];
+    const apiUrl  = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${filePath}`;
+
+    const res = await fetch(apiUrl, {
+      method : 'PUT',
+      headers: {
+        'Authorization': `token ${pat}`,
+        'Content-Type' : 'application/json',
+      },
+      body: JSON.stringify({
+        message: `Add gallery photo: ${filePath}`,
+        content : content,
+        branch  : GH_BRANCH,
+      })
+    });
+
+    if(!res.ok){
+      const err = await res.json().catch(()=>({}));
+      const code = res.status;
+      if(code===401) throw new Error('トークンが無効です。再設定してください');
+      if(code===403) throw new Error('権限が不足しています。トークンに repo 権限があるか確認してください');
+      if(code===422) throw new Error('ファイルパスが不正です');
+      throw new Error(err.message || `GitHub APIエラー(${code})`);
+    }
+
+    // GitHub Pages の CDN URL を返す
+    return `https://${GH_OWNER}.github.io/${GH_REPO}/${filePath}`;
+  }
+
+  /* =============================================
+     写真保存（圧縮 → GitHub → Firestore URL記録）
+     ============================================= */
+  window.saveGalleryPhotos = async function(){
+    const evId = document.getElementById('photoTargetEvent').value;
+    if(!evId){ showToast('対象イベントを選択してください'); return; }
+    if(!pendingGalleryPhotos.length){ showToast('写真を選んでください'); return; }
+
+    const pat = loadPat();
+    if(!pat){
+      showToast('⚠️ GitHubトークンを設定してください');
+      document.getElementById('githubPat').focus();
+      return;
+    }
+
+    const btn = document.getElementById('btnPhotoSave');
+    btn.disabled = true;
     let saved=0, failed=0;
     const errors=[];
-    const baseOrder=allGalleryPhotos.filter(p=>p.event_id===evId).length;
+    const baseOrder = allGalleryPhotos.filter(p=>p.event_id===evId).length;
+
     try{
-      for(let i=0;i<pendingGalleryPhotos.length;i++){
-        const p=pendingGalleryPhotos[i];
-        btn.textContent=`保存中... (${i+1}/${pendingGalleryPhotos.length})`;
+      for(let i=0; i<pendingGalleryPhotos.length; i++){
+        const p = pendingGalleryPhotos[i];
+        btn.textContent = `保存中... (${i+1}/${pendingGalleryPhotos.length})`;
         try{
-          const compressed=await compressImage(p.file);
-          const approxKB=Math.round(compressed.length*0.75/1024);
-          const data={
-            event_id:evId,
-            image_url:compressed,
-            caption:p.caption,
-            sort_order:baseOrder+i,
-            is_published:true,
-            size_kb:approxKB
+          // 1. Canvas で圧縮
+          const compressed = await compressImage(p.file);
+
+          // 2. GitHub にコミット
+          const ext      = 'jpg';
+          const safeName = `${Date.now()}_${Math.random().toString(36).slice(2,6)}.${ext}`;
+          const filePath = `images/gallery/${evId}/${safeName}`;
+          const imageUrl = await uploadToGitHub(compressed, filePath, pat);
+
+          // 3. Firestore に URL だけ保存
+          const data = {
+            event_id   : evId,
+            image_url  : imageUrl,
+            file_path  : filePath,
+            caption    : p.caption,
+            sort_order : baseOrder + i,
+            is_published: true,
           };
-          const docRef=await addDoc(collection(db,'gallery_photos'),data);
-          allGalleryPhotos.push({id:docRef.id,...data});
+          const docRef = await addDoc(collection(db,'gallery_photos'), data);
+          allGalleryPhotos.push({id:docRef.id, ...data});
           saved++;
         }catch(e){
           failed++;
           errors.push(`${p.file.name}：${e.message||'不明なエラー'}`);
-          console.error('保存失敗',p.file.name,e);
+          console.error('保存失敗', p.file.name, e);
         }
       }
     }finally{
       btn.disabled=false; btn.textContent='写真を保存';
     }
+
     pendingGalleryPhotos=[];
     renderGalleryPreview();
     renderGalleryEventList();
-    if(saved>0&&failed===0){
+
+    if(saved>0 && failed===0){
       showToast(`✅ ${saved}枚を保存しました`);
     }else if(saved>0){
       showToast(`⚠️ ${saved}枚保存・${failed}枚失敗`);
-      console.warn('失敗詳細:',errors);
+      console.warn('失敗詳細:', errors);
     }else{
-      showToast(`❌ 保存失敗：${errors[0]||'不明なエラー'}`);
-      console.error('全件失敗:',errors);
+      showToast(`❌ 失敗：${errors[0]||'不明なエラー'}`);
     }
   };
 
