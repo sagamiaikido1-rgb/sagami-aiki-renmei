@@ -309,8 +309,10 @@
           <input type="password" id="githubPat" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
             style="flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:4px;font-family:monospace;font-size:13px;">
           <button class="btn-primary" style="width:auto;margin:0;padding:8px 16px;" onclick="savePat()">保存</button>
+          <button class="btn-secondary" style="width:auto;margin:0;padding:8px 16px;font-size:12px;" onclick="testPat()">接続テスト</button>
           <span id="patStatus" style="font-size:12px;color:var(--text2);"></span>
         </div>
+        <div id="patError" style="display:none;margin-top:10px;padding:10px 14px;background:#fee2e2;border-radius:6px;font-size:12px;color:#991b1b;line-height:1.7;"></div>
         <p style="font-size:11px;color:var(--text2);margin-top:8px;">
           ※ トークンはこの端末のみに保存されます。
           <a href="https://github.com/settings/tokens/new?scopes=repo&description=sagami-aikido-gallery" target="_blank" style="color:var(--gold-light);">トークンを発行する →</a>
@@ -1000,11 +1002,18 @@
   const GH_REPO   = 'sagami-aiki-renmei';
   const GH_BRANCH = 'main';
 
+  function showPatError(msg){
+    const el=document.getElementById('patError');
+    if(!el) return;
+    if(msg){ el.innerHTML=msg; el.style.display='block'; }
+    else { el.style.display='none'; }
+  }
+
   function loadPat(){
     const pat = localStorage.getItem('gh_pat') || '';
     const el  = document.getElementById('githubPat');
     const st  = document.getElementById('patStatus');
-    if(el) el.value = pat;
+    if(el && !el.value) el.value = pat;
     if(st) st.textContent = pat ? '✅ 設定済み' : '⚠️ 未設定';
     return pat;
   }
@@ -1012,9 +1021,43 @@
   window.savePat = function(){
     const val = document.getElementById('githubPat').value.trim();
     if(!val){ showToast('トークンを入力してください'); return; }
+    if(!val.startsWith('ghp_') && !val.startsWith('github_pat_')){
+      showPatError('⚠️ トークンの形式が正しくありません。<br>「ghp_」または「github_pat_」で始まる文字列を入力してください。');
+      return;
+    }
     localStorage.setItem('gh_pat', val);
     document.getElementById('patStatus').textContent = '✅ 設定済み';
-    showToast('✅ トークンを保存しました');
+    showPatError('');
+    showToast('✅ トークンを保存しました。「接続テスト」で確認してください。');
+  };
+
+  window.testPat = async function(){
+    const pat = document.getElementById('githubPat').value.trim() || localStorage.getItem('gh_pat') || '';
+    if(!pat){ showPatError('⚠️ トークンを入力してから「接続テスト」を押してください。'); return; }
+    const st = document.getElementById('patStatus');
+    st.textContent = '🔄 確認中...';
+    showPatError('');
+    try{
+      const res = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}`, {
+        headers: { 'Authorization': `token ${pat}`, 'Accept': 'application/vnd.github.v3+json' }
+      });
+      if(res.ok){
+        st.textContent = '✅ 設定済み・接続OK';
+        localStorage.setItem('gh_pat', pat);
+        showPatError('');
+        showToast('✅ GitHubへの接続を確認しました');
+      } else {
+        const code = res.status;
+        st.textContent = '❌ 接続失敗';
+        if(code===401) showPatError('❌ <b>トークンが無効です（401）</b><br>トークンを再発行してください。<br><a href="https://github.com/settings/tokens/new?scopes=repo&description=sagami-aikido-gallery" target="_blank" style="color:#991b1b;">→ 新しいトークンを発行する</a>');
+        else if(code===403) showPatError('❌ <b>権限が不足しています（403）</b><br>「repo」スコープにチェックを入れてトークンを再発行してください。');
+        else if(code===404) showPatError(`❌ <b>リポジトリが見つかりません（404）</b><br>リポジトリ名を確認してください：${GH_OWNER}/${GH_REPO}`);
+        else showPatError(`❌ エラー（${code}）が発生しました。トークンを再発行してください。`);
+      }
+    }catch(e){
+      st.textContent = '❌ 接続失敗';
+      showPatError(`❌ ネットワークエラー：${e.message}`);
+    }
   };
 
   /* =============================================
@@ -1141,11 +1184,16 @@
 
     if(saved>0 && failed===0){
       showToast(`✅ ${saved}枚を保存しました`);
+      showPatError('');
     }else if(saved>0){
       showToast(`⚠️ ${saved}枚保存・${failed}枚失敗`);
-      console.warn('失敗詳細:', errors);
+      showPatError(`⚠️ ${failed}枚が失敗しました：<br>${errors.map(e=>`・${e}`).join('<br>')}`);
     }else{
-      showToast(`❌ 失敗：${errors[0]||'不明なエラー'}`);
+      const errMsg = errors[0] || '不明なエラー';
+      showPatError(`❌ アップロード失敗：<br>${errors.map(e=>`・${e}`).join('<br>')}
+        ${errMsg.includes('無効')||errMsg.includes('401')?'<br><br><a href="https://github.com/settings/tokens/new?scopes=repo&description=sagami-aikido-gallery" target="_blank" style="color:#991b1b;">→ トークンを再発行する</a>':''}
+      `);
+      showToast(`❌ 失敗：${errMsg}`);
     }
   };
 
