@@ -208,27 +208,24 @@
   /* ─── データ読み込み ─── */
   async function loadGallery(){
     try{
-      // 公開イベントを撮影日降順で取得
+      // 撮影日降順で取得し、公開フラグはJS側でフィルタ（複合インデックス不要）
       const evSnap = await getDocs(
-        query(collection(db,'gallery_events'),
-              where('is_published','==',true),
-              orderBy('shoot_date','desc'))
+        query(collection(db,'gallery_events'), orderBy('shoot_date','desc'))
       );
-      allEvents = evSnap.docs.map(d=>({id:d.id,...d.data()}));
+      allEvents = evSnap.docs.map(d=>({id:d.id,...d.data()})).filter(ev=>ev.is_published!==false);
 
-      // 全写真を一括取得してevent_idでグルーピング
-      const phSnap = await getDocs(
-        query(collection(db,'gallery_photos'),
-              where('is_published','==',true),
-              orderBy('sort_order'))
-      );
-      const allPhotosList = phSnap.docs.map(d=>({id:d.id,...d.data()}));
+      // 全写真を取得し、表示順でソート・公開フラグでフィルタ
+      const phSnap = await getDocs(collection(db,'gallery_photos'));
+      const allPhotosList = phSnap.docs.map(d=>({id:d.id,...d.data()}))
+        .filter(p=>p.is_published!==false)
+        .sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
       allEvents.forEach(ev=>{
         allPhotos[ev.id] = allPhotosList.filter(p=>p.event_id===ev.id);
       });
 
       renderGallery();
     }catch(e){
+      console.error('ギャラリー読み込みエラー:', e);
       document.getElementById('galleryContainer').innerHTML=
         '<div class="gallery-empty"><div class="gallery-empty-icon">📷</div><p>写真の読み込みに失敗しました。<br>時間をおいて再度お試しください。</p></div>';
     }
