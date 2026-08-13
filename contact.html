@@ -4,6 +4,7 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ご連絡先｜相模合気道連盟</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <style>
     :root{--navy:#1a2744;--gold:#9a7b0a;--gold-light:#c4960e;--white:#ffffff;--cream:#fafaf7;--gray:#6b7280;--light:#f2efe8;--border:#e8e2d6;}
     *{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Noto Sans JP',sans-serif;background:var(--white);color:var(--navy);line-height:1.8;}
@@ -291,6 +292,17 @@
       const data = { name, email, message, createdAt: serverTimestamp(), status: 'unread', isImportant: false };
       if(phone) data.phone = phone;
       await addDoc(collection(db, 'contacts'), data);
+
+      // 管理者へメール通知（EmailJS）。失敗してもFirestore保存は成功しているので、
+      // 通知エラーはユーザーに見せず、通常どおり成功表示にする
+      try{
+        await emailjs.send('service_6z0olk2', 'template_0uzk82d', {
+          name, email, phone: phone || '(未入力)', message
+        }, '84sAZfRjazDCwh_mP');
+      }catch(mailErr){
+        console.error('通知メール送信に失敗:', mailErr);
+      }
+
       showCfSuccess();
     }catch(err){
       formError.textContent = '送信に失敗しました。しばらくしてから再度お試しください。';
