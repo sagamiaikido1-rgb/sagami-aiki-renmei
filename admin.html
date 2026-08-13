@@ -136,6 +136,27 @@
     .gallery-event-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
     .gallery-event-meta{font-size:12px;color:var(--text2);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap;}
     .gallery-event-card .event-photos-grid{padding:12px 14px;}
+
+    /* お問い合わせ管理 */
+    .contact-filter{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+    .contact-filter button{background:var(--white);border:1px solid var(--border);color:var(--text2);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+    .contact-filter button.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+    .contact-card{background:var(--white);border:1px solid var(--border);border-left:4px solid var(--border);border-radius:6px;margin-bottom:10px;padding:14px 16px;}
+    .contact-card.status-unread{border-left-color:#e53e3e;}
+    .contact-card.status-in_progress{border-left-color:#c4960e;}
+    .contact-card.status-done{border-left-color:#38a169;}
+    .contact-card.important{background:#fffdf5;}
+    .contact-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+    .contact-name{font-size:14px;font-weight:700;color:var(--navy);}
+    .contact-star{background:none;border:none;font-size:16px;cursor:pointer;padding:0 2px;line-height:1;}
+    .contact-meta{font-size:11px;color:var(--text2);margin-top:3px;}
+    .contact-badge{display:inline-block;padding:2px 10px;border-radius:3px;font-size:11px;font-weight:700;margin-left:6px;}
+    .status-unread .contact-badge{background:#fee2e2;color:#991b1b;}
+    .status-in_progress .contact-badge{background:#fef3c7;color:#92400e;}
+    .status-done .contact-badge{background:#d1fae5;color:#065f46;}
+    .contact-message{font-size:13px;color:var(--text);margin-top:10px;line-height:1.7;white-space:pre-wrap;background:var(--surface2);border-radius:6px;padding:10px 12px;}
+    .contact-actions{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;}
+    .contact-actions select{background:var(--white);border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-size:12px;font-family:inherit;}
   </style>
 </head>
 <body>
@@ -174,6 +195,7 @@
     <button onclick="showTab('add')">➕ 個別追加</button>
     <button onclick="showTab('news')">📢 お知らせ</button>
     <button onclick="showTab('photo')">📷 写真管理</button>
+    <button onclick="showTab('contact')">📩 お問い合わせ<span id="contactUnreadBadge" style="display:none;background:#e53e3e;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;margin-left:5px;"></span></button>
     <button onclick="showTab('manual')">📖 マニュアル</button>
   </nav>
   <main>
@@ -367,6 +389,21 @@
       </div>
     </div>
 
+    <!-- お問い合わせ管理 -->
+    <div id="tab-contact" class="tab-content">
+      <div class="section-card">
+        <h3>お問い合わせ一覧</h3>
+        <div class="contact-filter">
+          <button class="active" onclick="filterContacts('all',this)">すべて</button>
+          <button onclick="filterContacts('unread',this)">未対応</button>
+          <button onclick="filterContacts('in_progress',this)">対応中</button>
+          <button onclick="filterContacts('done',this)">対応済み</button>
+          <button onclick="filterContacts('important',this)">⭐ 重要のみ</button>
+        </div>
+        <div id="contactList"><div class="login-notice"><p>読み込み中...</p></div></div>
+      </div>
+    </div>
+
     <!-- マニュアル -->
     <div id="tab-manual" class="tab-content">
       <div class="section-card">
@@ -462,6 +499,37 @@
         </div>
       </div>
 
+      <div class="section-card">
+        <h3>📩 お問い合わせ管理</h3>
+        <p style="font-size:14px;margin-bottom:10px;">
+          サイトの「お問い合わせ」ページから送信された内容は、この管理画面の「📩 お問い合わせ」タブに自動で届きます。
+        </p>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div style="background:#1a2744;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;flex-shrink:0;">1</div>
+            <div style="font-size:14px;">「📩 お問い合わせ」タブをクリックすると、新着順に一覧が表示されます</div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div style="background:#1a2744;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;flex-shrink:0;">2</div>
+            <div style="font-size:14px;">各お問い合わせの右上にある選択欄で「未対応／対応中／対応済み」を切り替えられます</div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div style="background:#1a2744;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;flex-shrink:0;">3</div>
+            <div style="font-size:14px;">☆マークをクリックすると「重要」マークを付けられます（⭐に変化）</div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div style="background:#1a2744;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;flex-shrink:0;">4</div>
+            <div style="font-size:14px;">対応が完了し不要になったお問い合わせは「削除」ボタンで削除できます</div>
+          </div>
+        </div>
+        <div style="background:#fffbeb;border-left:4px solid #c4960e;padding:10px 14px;border-radius:0 6px 6px 0;margin-top:14px;font-size:13px;">
+          💡 上部の絞り込みボタン（すべて／未対応／対応中／対応済み／⭐重要のみ）で表示を絞り込めます。
+        </div>
+        <div style="background:#fff5f5;border-left:4px solid #e53e3e;padding:10px 14px;border-radius:0 6px 6px 0;margin-top:10px;font-size:13px;">
+          ⚠️ お問い合わせフォームはサイト上の誰でも送信できます。定期的にこのタブを確認してください（メール通知を設定している場合はそちらでも気づけます）。
+        </div>
+      </div>
+
       <div class="section-card" style="border-top:3px solid #38a169;">
         <h3>💰 料金について</h3>
         <div style="background:#f0fff4;border:2px solid #38a169;border-radius:6px;padding:14px 18px;font-size:14px;">
@@ -479,7 +547,7 @@
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy }
+  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy, serverTimestamp }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   // Firebase Storage は無料プラン非対応のため不使用。画像はFirestoreに圧縮保存。
 
@@ -510,6 +578,7 @@
   let bulkPreviewEvents=[], showPast=false;
   let currentYear=new Date().getFullYear(), currentMonth=new Date().getMonth();
   let allGalleryEvents=[], allGalleryPhotos=[], pendingGalleryPhotos=[];
+  let allContacts=[], contactFilter='all';
 
   function escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
@@ -521,6 +590,7 @@
       loadEvents();
       loadNews();
       loadGalleryEvents();
+      loadContacts();
       loadPat();
       renderCalendar();
       const t=new Date(),m=String(t.getMonth()+1).padStart(2,'0'),d=String(t.getDate()).padStart(2,'0');
@@ -772,11 +842,12 @@
     document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
     document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
     document.getElementById('tab-'+tab).classList.add('active');
-    ['cal','bulk','list','add','news','photo','manual'].forEach((t,i)=>{if(t===tab)document.querySelectorAll('nav button')[i].classList.add('active');});
+    ['cal','bulk','list','add','news','photo','contact','manual'].forEach((t,i)=>{if(t===tab)document.querySelectorAll('nav button')[i].classList.add('active');});
     if(tab==='list')renderEventList();
     if(tab==='cal')renderCalendar();
     if(tab==='news')renderNewsList();
     if(tab==='photo'){loadPat();renderGalleryEventList();}
+    if(tab==='contact'){loadContacts();}
   };
 
   window.showToast=function(msg){
@@ -847,6 +918,110 @@
       await deleteDoc(doc(db,'news',id));
       allNews = allNews.filter(n=>n.id!==id);
       renderNewsList();
+      showToast('🗑 削除しました');
+    }catch(e){showToast('削除に失敗しました');}
+  };
+
+  /* =============================================
+     お問い合わせ管理
+     ============================================= */
+  async function loadContacts(){
+    try{
+      const q = query(collection(db,'contacts'), orderBy('createdAt','desc'));
+      const snap = await getDocs(q);
+      allContacts = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      renderContactList();
+      updateContactUnreadBadge();
+    }catch(e){showToast('お問い合わせの読み込みに失敗しました');}
+  }
+
+  function updateContactUnreadBadge(){
+    const badge = document.getElementById('contactUnreadBadge');
+    const n = allContacts.filter(c=>c.status==='unread').length;
+    if(n>0){badge.textContent=n;badge.style.display='inline-block';}
+    else{badge.style.display='none';}
+  }
+
+  window.filterContacts = function(f, btn){
+    contactFilter = f;
+    document.querySelectorAll('.contact-filter button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderContactList();
+  };
+
+  function fmtContactDate(ts){
+    try{
+      const d = ts && ts.toDate ? ts.toDate() : new Date(ts);
+      if(isNaN(d.getTime())) return '';
+      const p = n=>String(n).padStart(2,'0');
+      return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    }catch(e){return '';}
+  }
+
+  const STATUS_LABEL = {unread:'未対応', in_progress:'対応中', done:'対応済み'};
+
+  function renderContactList(){
+    const container = document.getElementById('contactList');
+    if(!container) return;
+    let list = allContacts;
+    if(contactFilter==='important') list = list.filter(c=>c.isImportant);
+    else if(contactFilter!=='all') list = list.filter(c=>c.status===contactFilter);
+
+    if(!list.length){container.innerHTML='<div class="login-notice"><p>該当するお問い合わせはありません</p></div>';return;}
+
+    container.innerHTML = list.map(c=>{
+      const status = c.status || 'unread';
+      return `<div class="contact-card status-${status} ${c.isImportant?'important':''}">
+        <div class="contact-card-top">
+          <div>
+            <span class="contact-name">${escH(c.name)}</span>
+            <span class="contact-badge">${STATUS_LABEL[status]||status}</span>
+            <div class="contact-meta">${fmtContactDate(c.createdAt)}　${escH(c.email)}${c.phone?'　'+escH(c.phone):''}</div>
+          </div>
+          <button class="contact-star" onclick="toggleContactImportant('${c.id}')" title="重要マーク">${c.isImportant?'⭐':'☆'}</button>
+        </div>
+        <div class="contact-message">${escH(c.message)}</div>
+        <div class="contact-actions">
+          <select onchange="updateContactStatus('${c.id}', this.value)">
+            <option value="unread" ${status==='unread'?'selected':''}>未対応</option>
+            <option value="in_progress" ${status==='in_progress'?'selected':''}>対応中</option>
+            <option value="done" ${status==='done'?'selected':''}>対応済み</option>
+          </select>
+          <button class="btn-danger" onclick="deleteContact('${c.id}')">削除</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  window.updateContactStatus = async function(id, status){
+    try{
+      await updateDoc(doc(db,'contacts',id), {status});
+      const c = allContacts.find(x=>x.id===id);
+      if(c) c.status = status;
+      renderContactList();
+      updateContactUnreadBadge();
+      showToast('✅ 対応状況を更新しました');
+    }catch(e){showToast('更新に失敗しました');renderContactList();}
+  };
+
+  window.toggleContactImportant = async function(id){
+    const c = allContacts.find(x=>x.id===id);
+    if(!c) return;
+    const next = !c.isImportant;
+    try{
+      await updateDoc(doc(db,'contacts',id), {isImportant: next});
+      c.isImportant = next;
+      renderContactList();
+    }catch(e){showToast('更新に失敗しました');}
+  };
+
+  window.deleteContact = async function(id){
+    if(!confirm('このお問い合わせを削除しますか？'))return;
+    try{
+      await deleteDoc(doc(db,'contacts',id));
+      allContacts = allContacts.filter(c=>c.id!==id);
+      renderContactList();
+      updateContactUnreadBadge();
       showToast('🗑 削除しました');
     }catch(e){showToast('削除に失敗しました');}
   };
